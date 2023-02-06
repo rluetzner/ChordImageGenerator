@@ -1,6 +1,6 @@
 ﻿/*
  * Chord Image Generator
- * http://einaregilsson.com/chord-image-generator/
+ * https://einaregilsson.com/chord-image-generator/
  *
  * Copyright (C) 2009-2019 Einar Egilsson [einar@einaregilsson.com]
  *

@@ -120,7 +120,7 @@ function showChord() {
     name = escapeName(name);
     var fingers = fE.value + fA.value + fD.value + fG.value + fB.value + fe.value;
     var chordUrl = name + '.png?p=' + chord + '&f=' + fingers + '&s=' + size;
-    var url = 'http://' + document.location.host + document.location.pathname.replace('index.html', '');
+    var url = document.location.protocol + '//' + document.location.host + document.location.pathname.replace('index.html', '');
     url += chordUrl;
 
     if (window.analyticsId) {

@@ -38,7 +38,7 @@ namespace EinarEgilsson.Chords
                 };
 
             var image = new ChordBoxImage(chordName, pos, fingers, size);
-            image.Save(context.Response.Body);
+            await image.SaveAsync(context.Response.Body);
         }
     }
 }

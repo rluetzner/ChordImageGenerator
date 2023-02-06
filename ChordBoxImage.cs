@@ -29,6 +29,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 //NOTE 2019-08-27: This code was written more than 10 years ago. I'm updating
 //the surrounding stuff now, getting everything running on .NET Core, just to
@@ -114,11 +115,21 @@ namespace EinarEgilsson.Chords {
 
         #region Public methods
 
-        public void Save(Stream output) {
-            _bitmap.Save(output, ImageFormat.Png);
+        public async Task SaveAsync(Stream output) {
+            using (var ms = new MemoryStream())
+            {
+                _bitmap.Save(ms, ImageFormat.Png);
+                ms.Seek(0, SeekOrigin.Begin);
+                await ms.CopyToAsync(output);
+            }
         }
 
-        public byte[]  GetBytes()
+        public void Save(Stream output) {
+            var awaiter = SaveAsync(output).ConfigureAwait(false).GetAwaiter();
+            awaiter.GetResult();
+        }
+
+        public byte[] GetBytes()
         {
             using (var ms = new MemoryStream())
             {
@@ -138,7 +149,7 @@ namespace EinarEgilsson.Chords {
         #endregion
 
         #region Private methods
-        
+
         private void InitializeSizes() {
             _fretWidth = 4 * _size;
             _nutHeight = _fretWidth / 2f;

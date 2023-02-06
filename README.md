@@ -41,3 +41,10 @@ The project should run on a Mac and on Linux but the drawing might not look **ex
 
 The source is licensed under the MIT License. You are also free to link directly to chordgenerator.net, although I give no guarantees about uptime or reliability.
 
+## Running with Docker
+
+You can also run this web server as a Docker container.
+
+```bash
+docker run -p 5000:80 rluetzner/chordimagegenerator:latest
+```

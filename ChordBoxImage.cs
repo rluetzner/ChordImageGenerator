@@ -379,7 +379,7 @@ namespace EinarEgilsson.Chords {
                     }
                     _graphics.DrawEllipse(pen, markerXpos, ypos, _markerWidth, _markerWidth);
                 } else if (absolutePos == MUTED) {
-                    Pen pen = new Pen(_foregroundBrush, _lineWidth * 1.5f);
+                    Pen pen = new Pen(_foregroundBrush, _lineWidth);
                     float ypos = _ystart - _fretWidth;
                     float markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
                     if (_baseFret == 1) {

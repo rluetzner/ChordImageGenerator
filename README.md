@@ -39,7 +39,7 @@ If you're on Linux, you'll need to install libgdiplus, e.g. ```sudo apt install 
 
 The project should run on a Mac and on Linux but the drawing might not look **exactly** the same as it does on Windows, because of GDI+ differences.
 
-The source is licensed under the MIT License. You are also free to link directly to chordgenerator.net, although I give no guarantees about uptime or reliability.
+The source is licensed under the MIT License. You are also free to link directly to chordgenerator.luetzners.de, although I give no guarantees about uptime or reliability.
 
 ## Running with Docker
 

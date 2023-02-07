@@ -25,8 +25,13 @@ namespace EinarEgilsson.Chords
 
             var query = context.Request.Query;
 
-            var path = HttpUtility.UrlDecode(context.Request.Path);
-            var chordName = Regex.Match(path, @"^/(.*)\.png$").Groups[1].Value;
+            var chordName = Regex.Match(context.Request.Path.ToString(), @"^/(.*)\.png$").Groups[1].Value;
+            // For whatever reason 'context.Request.Path' resolves a '%2B' to a
+            // '+', but not '%23' to '#'.
+            // Using HttpUtilty.UrlDecode() breaks this, because it will remove
+            // the '+'. That is why we require a workaround here.
+            var split = chordName.Split('+');
+            chordName = string.Join('+', split.Select(s => HttpUtility.UrlDecode(s)));
             var pos = query["pos"].FirstOrDefault() ?? query["p"].FirstOrDefault() ?? "000000";
             var fingers = query["fingers"].FirstOrDefault() ?? query["f"].FirstOrDefault() ?? "------";
             var size = query["size"].FirstOrDefault() ?? query["s"].FirstOrDefault() ?? "1";

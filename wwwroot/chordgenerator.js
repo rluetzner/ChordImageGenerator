@@ -41,7 +41,7 @@ function $(id) {
 */
 function parseChord(chord) {
     var parts = chord.split('?');
-    $('chordname').value = unescapeName(parts[0]).replace(/\.png$/, '');
+    $('chordname').value = decodeURIComponent(parts[0]).replace(/\.png$/, '');
 
     var p = (chord.match(/p(os)?=([^&]+)/) || {})[2];
     var f = (chord.match(/f(ingers)?=([^&]+)/) || {})[2];
@@ -80,14 +80,6 @@ function parseChord(chord) {
     showChord();
 }
 
-function escapeName(name) {
-    return name.replace(/#/g, '%23').replace(/\//, '%2f');
-}
-
-function unescapeName(name) {
-    return name.replace(/%23/, '#').replace(/%2f/gi, '/');
-}
-
 /**
 * Shows a chord image based on the values in the textboxes.
 */
@@ -112,14 +104,14 @@ function showChord() {
     }
 
     var name = $('chordname').value;
+    var encodedName = encodeURIComponent(name);
     var chord = pE.value + '-' + pA.value + '-' + pD.value + '-' + pG.value + '-' + pB.value + '-' + pe.value;
     var size = $('size').value;
     if (chord.length == 11) {
         chord = chord.replace(/-/g, '');
     }
-    name = escapeName(name);
     var fingers = fE.value + fA.value + fD.value + fG.value + fB.value + fe.value;
-    var chordUrl = name + '.png?p=' + chord + '&f=' + fingers + '&s=' + size;
+    var chordUrl = encodedName + '.png?p=' + chord + '&f=' + fingers + '&s=' + size;
     var url = document.location.protocol + '//' + document.location.host + document.location.pathname.replace('index.html', '');
     url += chordUrl;
 
@@ -138,6 +130,6 @@ function showChord() {
 
     var image = $('chord-image');
     image.setAttribute('src', url);
-    image.setAttribute('alt', unescapeName(name) + ' chord');
-    image.setAttribute('title', unescapeName(name) + ' chord');
+    image.setAttribute('alt', name + ' chord');
+    image.setAttribute('title', name + ' chord');
 }

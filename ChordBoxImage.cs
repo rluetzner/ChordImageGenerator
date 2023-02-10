@@ -5,20 +5,20 @@
  * Copyright (C) 2009-2019 Einar Egilsson [einar@einaregilsson.com]
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the “Software”), to 
- * deal in the Software without restriction, including without limitation the 
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
- * sell copies of the Software, and to permit persons to whom the Software is 
+ * of this software and associated documentation files (the “Software”), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
@@ -72,7 +72,7 @@ namespace EinarEgilsson.Chords
         private char[] _fingers = new char[] { NO_FINGER, NO_FINGER, NO_FINGER,
                                              NO_FINGER, NO_FINGER, NO_FINGER};
         private string _chordName;
-        private bool _error;
+        private bool _parseError;
 
         private float _fretWidth;
         private int _lineWidth;
@@ -192,7 +192,7 @@ namespace EinarEgilsson.Chords
             // separated by a dash, e.g. 10-12-12-0-0-0.
             if (chord == null || !Regex.IsMatch(chord, @"[\dxX]{6}|((1|2)?[\dxX]-){5}(1|2)?[\dxX]"))
             {
-                _error = true;
+                _parseError = true;
                 return;
             }
 
@@ -266,7 +266,7 @@ namespace EinarEgilsson.Chords
             }
             else if (!Regex.IsMatch(fingers, @"[tT\-1234]{6}"))
             {
-                _error = true;
+                _parseError = true;
             }
             else
             {
@@ -327,7 +327,7 @@ namespace EinarEgilsson.Chords
             _graphics = Graphics.FromImage(_bitmap);
             _graphics.SmoothingMode = SmoothingMode.HighQuality;
             _graphics.FillRectangle(_backgroundBrush, 0, 0, _bitmap.Width, _bitmap.Height);
-            if (_error)
+            if (_parseError)
             {
                 // Draw red x
                 Pen errorPen = new Pen(Color.Red, 3f);

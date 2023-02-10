@@ -28,6 +28,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -187,42 +188,48 @@ namespace EinarEgilsson.Chords
 
         private void ParseChord(string chord)
         {
+            // If the chord involves frets higher than 10, the positions must be
+            // separated by a dash, e.g. 10-12-12-0-0-0.
             if (chord == null || !Regex.IsMatch(chord, @"[\dxX]{6}|((1|2)?[\dxX]-){5}(1|2)?[\dxX]"))
             {
                 _error = true;
+                return;
             }
-            else
+
+            var positions = GetFretPositions(chord);
+            for (int i = 0; i < 6; i++)
             {
-                string[] parts;
-                if (chord.Length > 6)
+                if (positions[i].ToUpper() == "X")
                 {
-                    parts = chord.Split('-');
+                    _chordPositions[i] = MUTED;
                 }
                 else
                 {
-                    parts = new string[6];
-                    for (int i = 0; i < 6; i++)
-                    {
-                        parts[i] = chord[i].ToString();
-                    }
+                    _chordPositions[i] = int.Parse(positions[i]);
                 }
-                int maxFret = 0, minFret = int.MaxValue;
-                for (int i = 0; i < 6; i++)
-                {
-                    if (parts[i].ToUpper() == "X")
-                    {
-                        _chordPositions[i] = MUTED;
-                    }
-                    else
-                    {
-                        _chordPositions[i] = int.Parse(parts[i]);
-                        maxFret = Math.Max(maxFret, _chordPositions[i]);
-                        if (_chordPositions[i] != 0)
-                        {
-                            minFret = Math.Min(minFret, _chordPositions[i]);
-                        }
-                    }
-                }
+            }
+
+            SetBaseFret();
+
+            // This is a local function, to prevent anybody from calling this
+            // without setting _chordPositions first.
+            void SetBaseFret()
+            {
+                // We're differentiating, because we can always play an open
+                // chord, no matter how high up on the fretboard we are.
+                // However, we have to also consider the case that we're playing
+                // all open strings or even all muted strings (i.e. everything
+                // is 0 or -1).
+                var nonZeroChordPositions = _chordPositions
+                    .Where(p => p > 0);
+                var minFret = nonZeroChordPositions.Any()
+                    ? nonZeroChordPositions.Min()
+                    : 0;
+
+                // The highest fret is easy. :-)
+                var maxFret = _chordPositions
+                    .Max();
+
                 if (maxFret <= 5)
                 {
                     _baseFret = 1;
@@ -232,6 +239,22 @@ namespace EinarEgilsson.Chords
                     _baseFret = minFret;
                 }
             }
+        }
+
+
+        private string[] GetFretPositions(string chordInput)
+        {
+            if (chordInput.Length > 6)
+            {
+                return chordInput.Split('-');
+            }
+
+            var parts = new string[6];
+            for (int i = 0; i < 6; i++)
+            {
+                parts[i] = chordInput[i].ToString();
+            }
+            return parts;
         }
 
         private void ParseFingers(string fingers)

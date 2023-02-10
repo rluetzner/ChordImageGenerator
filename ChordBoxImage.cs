@@ -150,38 +150,6 @@ namespace EinarEgilsson.Chords {
 
         #region Private methods
 
-        private void InitializeSizes() {
-            _fretWidth = 4 * _size;
-            _nutHeight = _fretWidth / 2f;
-            _lineWidth = (int)Math.Ceiling(_size * 0.31);
-            _dotWidth = (int)Math.Ceiling(0.9 * _fretWidth);
-            _markerWidth = 0.7f * _fretWidth;
-            _boxWidth = 5 * _fretWidth + 6 * _lineWidth;
-            _boxHeight = FRET_COUNT * (_fretWidth + _lineWidth) + _lineWidth;
-
-            //Find out font sizes
-            FontFamily family = new FontFamily(FONT_NAME);
-            float perc = family.GetCellAscent(FontStyle.Regular) / (float)family.GetLineSpacing(FontStyle.Regular);
-            _fretFontSize = _fretWidth / perc;
-            _fingerFontSize = _fretWidth * 0.8f;
-            _nameFontSize = _fretWidth * 2f / perc;
-            _superScriptFontSize = 0.7f * _nameFontSize;
-            if (_size == 1) {
-                _nameFontSize += 2;
-                _fingerFontSize += 2;
-                _fretFontSize += 2;
-                _superScriptFontSize += 2;
-            }
-
-            _xstart = _fretWidth;
-            _ystart = (float) Math.Round(0.2f * _superScriptFontSize + _nameFontSize + _nutHeight + 1.7f * _markerWidth);
-            _imageWidth = (int)(_boxWidth + 5 * _fretWidth);
-            _imageHeight = (int)(_boxHeight + _ystart + _fretWidth + _fretWidth);
-
-            _signWidth = (int)(_fretWidth * 0.75);
-            _signRadius = _signWidth / 2;
-        }
-
         private string ParseName(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -208,30 +176,6 @@ namespace EinarEgilsson.Chords {
                     .Replace("B", "♭");
             }
             return string.Join("_", splitString);
-        }
-
-        private void ParseSize(string size) {
-            if (size == null) {
-                _size = 1;
-            } else {
-                double dsize;
-                if (double.TryParse(size, out dsize)) {
-                    dsize = Math.Round(dsize, 0);
-                    _size = Convert.ToInt32(Math.Min(Math.Max(1, dsize), 10));
-                } else {
-                    _size = 1;
-                }
-            }
-        }
-
-        private void ParseFingers(string fingers) {
-            if (fingers == null) {
-                return; //Allowed to not specify fingers
-            } else if (!Regex.IsMatch(fingers, @"[tT\-1234]{6}")) {
-                _error = true;
-            } else {
-                _fingers = fingers.ToUpper().ToCharArray();
-            }
         }
 
         private void ParseChord(string chord) {
@@ -265,6 +209,62 @@ namespace EinarEgilsson.Chords {
                     _baseFret = minFret;
                 }
             }
+        }
+
+        private void ParseFingers(string fingers) {
+            if (fingers == null) {
+                return; //Allowed to not specify fingers
+            } else if (!Regex.IsMatch(fingers, @"[tT\-1234]{6}")) {
+                _error = true;
+            } else {
+                _fingers = fingers.ToUpper().ToCharArray();
+            }
+        }
+
+        private void ParseSize(string size) {
+            if (size == null) {
+                _size = 1;
+            } else {
+                double dsize;
+                if (double.TryParse(size, out dsize)) {
+                    dsize = Math.Round(dsize, 0);
+                    _size = Convert.ToInt32(Math.Min(Math.Max(1, dsize), 10));
+                } else {
+                    _size = 1;
+                }
+            }
+        }
+
+        private void InitializeSizes() {
+            _fretWidth = 4 * _size;
+            _nutHeight = _fretWidth / 2f;
+            _lineWidth = (int)Math.Ceiling(_size * 0.31);
+            _dotWidth = (int)Math.Ceiling(0.9 * _fretWidth);
+            _markerWidth = 0.7f * _fretWidth;
+            _boxWidth = 5 * _fretWidth + 6 * _lineWidth;
+            _boxHeight = FRET_COUNT * (_fretWidth + _lineWidth) + _lineWidth;
+
+            //Find out font sizes
+            FontFamily family = new FontFamily(FONT_NAME);
+            float perc = family.GetCellAscent(FontStyle.Regular) / (float)family.GetLineSpacing(FontStyle.Regular);
+            _fretFontSize = _fretWidth / perc;
+            _fingerFontSize = _fretWidth * 0.8f;
+            _nameFontSize = _fretWidth * 2f / perc;
+            _superScriptFontSize = 0.7f * _nameFontSize;
+            if (_size == 1) {
+                _nameFontSize += 2;
+                _fingerFontSize += 2;
+                _fretFontSize += 2;
+                _superScriptFontSize += 2;
+            }
+
+            _xstart = _fretWidth;
+            _ystart = (float) Math.Round(0.2f * _superScriptFontSize + _nameFontSize + _nutHeight + 1.7f * _markerWidth);
+            _imageWidth = (int)(_boxWidth + 5 * _fretWidth);
+            _imageHeight = (int)(_boxHeight + _ystart + _fretWidth + _fretWidth);
+
+            _signWidth = (int)(_fretWidth * 0.75);
+            _signRadius = _signWidth / 2;
         }
 
         private void CreateImage() {
@@ -306,47 +306,6 @@ namespace EinarEgilsson.Chords {
             }
         }
 
-        private struct Bar { public int Str, Pos, Length; public char Finger; }
-        
-        private void DrawBars() {
-            var bars = new Dictionary<char, Bar>();
-            for (int i = 0; i < 5; i++) {
-                if (_chordPositions[i] != MUTED && _chordPositions[i] != OPEN && _fingers[i] != NO_FINGER && !bars.ContainsKey(_fingers[i])) {
-                    Bar bar = new Bar { Str = i, Pos = _chordPositions[i], Length = 0, Finger = _fingers[i] };
-                    for (int j = i + 1; j < 6; j++) {
-                        if (_fingers[j] == bar.Finger && _chordPositions[j] == _chordPositions[i]) {
-                            bar.Length = j - i;
-                        }
-                    }
-                    if (bar.Length > 0) {
-                        bars.Add(bar.Finger, bar);
-                    }
-                }
-            }
-
-            float totalFretWidth = _fretWidth + _lineWidth;
-            float arcWidth = _dotWidth / 7;
-            foreach (Bar bar in bars.Values) {                
-                float yTempOffset = 0.0f;
-                
-                if (bar.Pos == 1) {  // the bar must go a little higher in order to be shown correctly
-                    yTempOffset = - 0.3f * totalFretWidth ;
-                }
-
-                float xstart = _xstart + bar.Str * totalFretWidth - (_dotWidth / 2);
-                float y = _ystart + (bar.Pos - _baseFret) * totalFretWidth - (0.6f * totalFretWidth) + yTempOffset;
-                Pen pen = new Pen(_foregroundBrush, arcWidth);
-                Pen pen2 = new Pen(_foregroundBrush, 1.3f * arcWidth);
-                //_graphics.DrawLine(pen, xstart, y, xend, y);
-
-                float barWidth = bar.Length * totalFretWidth + _dotWidth;
-
-                _graphics.DrawArc(pen, xstart, y, barWidth, totalFretWidth, -1, -178);
-                _graphics.DrawArc(pen2, xstart, y - arcWidth, barWidth, totalFretWidth + arcWidth, -4, -172);
-                _graphics.DrawArc(pen2, xstart, y - 1.5f * arcWidth, barWidth, totalFretWidth + 3 * arcWidth, -20, -150);
-            }
-        }
-
         private void DrawChordPositions() {
             float yoffset = _ystart - _fretWidth;
             float xoffset = _lineWidth / 2f;
@@ -378,19 +337,6 @@ namespace EinarEgilsson.Chords {
                     _graphics.DrawLine(pen, markerXpos, ypos, markerXpos + _markerWidth, ypos + _markerWidth);
                     _graphics.DrawLine(pen, markerXpos, ypos + _markerWidth, markerXpos + _markerWidth, ypos);
                 }
-            }
-        }
-
-        private void DrawFingers() {
-            float xpos = _xstart + (0.5f * _lineWidth);
-            float ypos = _ystart + _boxHeight;
-            Font font = new Font(FONT_NAME, _fingerFontSize);
-            foreach (char finger in _fingers) {
-                if (finger != NO_FINGER) {
-                    SizeF charSize = _graphics.MeasureString(finger.ToString(), font);
-                    _graphics.DrawString(finger.ToString(), font, _foregroundBrush, xpos - (0.5f * charSize.Width), ypos);
-                }
-                xpos += (_fretWidth + _lineWidth);
             }
         }
 
@@ -452,6 +398,60 @@ namespace EinarEgilsson.Chords {
                 Font fretFont = new Font(FONT_NAME, _fretFontSize, GraphicsUnit.Pixel);
                 float offset = (fretFont.Size - _fretWidth) / 2f;
                 _graphics.DrawString(_baseFret + "fr", fretFont, _foregroundBrush, _xstart + _boxWidth + 0.3f * _fretWidth, _ystart - offset);
+            }
+        }
+
+        private void DrawFingers() {
+            float xpos = _xstart + (0.5f * _lineWidth);
+            float ypos = _ystart + _boxHeight;
+            Font font = new Font(FONT_NAME, _fingerFontSize);
+            foreach (char finger in _fingers) {
+                if (finger != NO_FINGER) {
+                    SizeF charSize = _graphics.MeasureString(finger.ToString(), font);
+                    _graphics.DrawString(finger.ToString(), font, _foregroundBrush, xpos - (0.5f * charSize.Width), ypos);
+                }
+                xpos += (_fretWidth + _lineWidth);
+            }
+        }
+
+        private struct Bar { public int Str, Pos, Length; public char Finger; }
+
+        private void DrawBars() {
+            var bars = new Dictionary<char, Bar>();
+            for (int i = 0; i < 5; i++) {
+                if (_chordPositions[i] != MUTED && _chordPositions[i] != OPEN && _fingers[i] != NO_FINGER && !bars.ContainsKey(_fingers[i])) {
+                    Bar bar = new Bar { Str = i, Pos = _chordPositions[i], Length = 0, Finger = _fingers[i] };
+                    for (int j = i + 1; j < 6; j++) {
+                        if (_fingers[j] == bar.Finger && _chordPositions[j] == _chordPositions[i]) {
+                            bar.Length = j - i;
+                        }
+                    }
+                    if (bar.Length > 0) {
+                        bars.Add(bar.Finger, bar);
+                    }
+                }
+            }
+
+            float totalFretWidth = _fretWidth + _lineWidth;
+            float arcWidth = _dotWidth / 7;
+            foreach (Bar bar in bars.Values) {
+                float yTempOffset = 0.0f;
+
+                if (bar.Pos == 1) {  // the bar must go a little higher in order to be shown correctly
+                    yTempOffset = - 0.3f * totalFretWidth ;
+                }
+
+                float xstart = _xstart + bar.Str * totalFretWidth - (_dotWidth / 2);
+                float y = _ystart + (bar.Pos - _baseFret) * totalFretWidth - (0.6f * totalFretWidth) + yTempOffset;
+                Pen pen = new Pen(_foregroundBrush, arcWidth);
+                Pen pen2 = new Pen(_foregroundBrush, 1.3f * arcWidth);
+                //_graphics.DrawLine(pen, xstart, y, xend, y);
+
+                float barWidth = bar.Length * totalFretWidth + _dotWidth;
+
+                _graphics.DrawArc(pen, xstart, y, barWidth, totalFretWidth, -1, -178);
+                _graphics.DrawArc(pen2, xstart, y - arcWidth, barWidth, totalFretWidth + arcWidth, -4, -172);
+                _graphics.DrawArc(pen2, xstart, y - 1.5f * arcWidth, barWidth, totalFretWidth + 3 * arcWidth, -20, -150);
             }
         }
 

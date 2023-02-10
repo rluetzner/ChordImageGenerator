@@ -276,22 +276,14 @@ namespace EinarEgilsson.Chords
 
         private void ParseSize(string size)
         {
-            if (size == null)
+            if (double.TryParse(size, out var dsize))
             {
-                _size = 1;
+                dsize = Math.Round(dsize, 0);
+                _size = Convert.ToInt32(Math.Min(Math.Max(1, dsize), 10));
             }
             else
             {
-                double dsize;
-                if (double.TryParse(size, out dsize))
-                {
-                    dsize = Math.Round(dsize, 0);
-                    _size = Convert.ToInt32(Math.Min(Math.Max(1, dsize), 10));
-                }
-                else
-                {
-                    _size = 1;
-                }
+                _size = 1;
             }
         }
 

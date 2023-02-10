@@ -207,7 +207,7 @@ namespace EinarEgilsson.Chords {
             {
                 return name;
             }
-            return name.Replace("#", "\u266f");
+            return name.Replace("#", "♯");
         }
 
         private static string ConvertFlatSign(string name)
@@ -216,8 +216,8 @@ namespace EinarEgilsson.Chords {
             {
                 return name;
             }
-            name = name.Replace("b", "\u266d");
-            return name.Replace("B", "\u266d");
+            name = name.Replace("b", "♭");
+            return name.Replace("B", "♭");
         }
 
         private void ParseSize(string size) {

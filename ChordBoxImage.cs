@@ -188,6 +188,7 @@ namespace EinarEgilsson.Chords {
             {
                 return "";
             }
+
             var splitString = name.Split('_');
             for (int i = 1; i < splitString.Length; i++)
             {
@@ -195,29 +196,18 @@ namespace EinarEgilsson.Chords {
                 {
                     continue;
                 }
-                splitString[i] = ConvertSharpSign(splitString[i]);
-                splitString[i] = ConvertFlatSign(splitString[i]);
+
+                if (splitString[i].Length > 1)
+                {
+                    continue;
+                }
+
+                splitString[i] = splitString[i]
+                    .Replace("#", "♯")
+                    .Replace("b", "♭")
+                    .Replace("B", "♭");
             }
             return string.Join("_", splitString);
-        }
-
-        private static string ConvertSharpSign(string name)
-        {
-            if (name.Length > 1)
-            {
-                return name;
-            }
-            return name.Replace("#", "♯");
-        }
-
-        private static string ConvertFlatSign(string name)
-        {
-            if (name.Length > 1)
-            {
-                return name;
-            }
-            name = name.Replace("b", "♭");
-            return name.Replace("B", "♭");
         }
 
         private void ParseSize(string size) {

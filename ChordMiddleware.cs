@@ -12,13 +12,15 @@ namespace EinarEgilsson.Chords
     {
         private readonly RequestDelegate _next;
 
-        public ChordMiddleware(RequestDelegate next) {
+        public ChordMiddleware(RequestDelegate next)
+        {
             _next = next;
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (!context.Request.Path.ToString().ToLower().EndsWith(".png")) {
+            if (!context.Request.Path.ToString().ToLower().EndsWith(".png"))
+            {
                 await _next(context);
                 return;
             }
@@ -37,7 +39,7 @@ namespace EinarEgilsson.Chords
             var size = query["size"].FirstOrDefault() ?? query["s"].FirstOrDefault() ?? "1";
 
             context.Response.ContentType = "image/png";
-            context.Response.GetTypedHeaders().CacheControl = 
+            context.Response.GetTypedHeaders().CacheControl =
                 new CacheControlHeaderValue()
                 {
                     Public = true,

@@ -304,6 +304,7 @@ namespace EinarEgilsson.Chords
             _fingerFontSize = _fretWidth * 0.8f;
             _nameFontSize = _fretWidth * 2f / perc;
             _superScriptFontSize = 0.7f * _nameFontSize;
+
             if (_size == 1)
             {
                 _nameFontSize += 2;
@@ -312,7 +313,6 @@ namespace EinarEgilsson.Chords
                 _superScriptFontSize += 2;
             }
 
-            _xstart = _fretWidth;
             _ystart = (float)Math.Round(0.2f * _superScriptFontSize + _nameFontSize + _nutHeight + 1.7f * _markerWidth);
             _imageWidth = (int)(_boxWidth + 5 * _fretWidth);
             _imageHeight = (int)(_boxHeight + _ystart + _fretWidth + _fretWidth);
@@ -326,6 +326,22 @@ namespace EinarEgilsson.Chords
             _bitmap = new Bitmap(_imageWidth, _imageHeight);
             _graphics = Graphics.FromImage(_bitmap);
             _graphics.SmoothingMode = SmoothingMode.HighQuality;
+
+            // Widen image if the chord name won't fit.
+            var chordNameSize = getChordNameSizeInPixels();
+            if (_imageWidth < chordNameSize + 2 * _fretWidth)
+            {
+                _imageWidth = (int) (chordNameSize + 2 * _fretWidth);
+                _bitmap = new Bitmap(_imageWidth, _imageHeight);
+                _graphics = Graphics.FromImage(_bitmap);
+                _graphics.SmoothingMode = SmoothingMode.HighQuality;
+            }
+
+            // We can only do this now. This is a chicken-egg problem.
+            // We need _graphics to measure the text, but we can only get graphics once we've initialized the bitmap.
+            // And only once we have the final image width, can we center the fretboard box.
+            _xstart = _imageWidth / 2 - _boxWidth / 2;
+
             _graphics.FillRectangle(_backgroundBrush, 0, 0, _bitmap.Width, _bitmap.Height);
             if (_parseError)
             {
@@ -416,7 +432,6 @@ namespace EinarEgilsson.Chords
             Font nameFont = new Font(FONT_NAME, _nameFontSize, GraphicsUnit.Pixel);
             Font superFont = new Font(FONT_NAME, _superScriptFontSize, GraphicsUnit.Pixel);
             string[] parts = _chordName.Split('_');
-            float xTextStart = _xstart;
 
             // Set max parts to 4 for protection
             int maxParts = parts.Length;
@@ -425,43 +440,10 @@ namespace EinarEgilsson.Chords
                 maxParts = 4;
             }
 
-            // count total width of the chord in pixels
-            float chordNameSize = 0;
-            for (int i = 0; i < maxParts; i++)
-            {
-                if (i % 2 == 0)
-                {
-                    // odd parts are normal text
-                    SizeF stringSize2 = _graphics.MeasureString(parts[i], nameFont);
-                    chordNameSize += 0.75f * stringSize2.Width;
-                }
-                else
-                {
-                    // even parts are superscipts
-                    SizeF stringSize2 = _graphics.MeasureString(parts[i], superFont);
-                    chordNameSize += 0.8f * stringSize2.Width;
-                }
-            }
+            var chordNameSize = getChordNameSizeInPixels();
 
             // set the x position for the chord name
-            if (chordNameSize < _boxWidth)
-            {
-                xTextStart = _xstart + ((_boxWidth - chordNameSize) / 2f);
-            }
-            else if ((xTextStart + chordNameSize) > _imageWidth)
-            {
-                // if it goes outside the boundaries
-                float nx = (xTextStart + chordNameSize) / 2f;
-                if (nx < _imageWidth / 2)
-                {
-                    // if it can fit inside the image
-                    xTextStart = (_imageWidth / 2) - nx;
-                }
-                else
-                {
-                    xTextStart = 2f;
-                }
-            }
+            var xTextStart = _imageWidth / 2 - chordNameSize / 2;
 
             // Paint the chord
             for (int i = 0; i < maxParts; i++)
@@ -470,13 +452,13 @@ namespace EinarEgilsson.Chords
                 {
                     SizeF stringSize2 = _graphics.MeasureString(parts[i], nameFont);
                     _graphics.DrawString(parts[i], nameFont, _foregroundBrush, xTextStart, 0.2f * _superScriptFontSize);
-                    xTextStart += 0.75f * stringSize2.Width;
+                    xTextStart += stringSize2.Width;
                 }
                 else
                 {
                     SizeF stringSize2 = _graphics.MeasureString(parts[i], superFont);
                     _graphics.DrawString(parts[i], superFont, _foregroundBrush, xTextStart, 0);
-                    xTextStart += 0.8f * stringSize2.Width;
+                    xTextStart += stringSize2.Width;
                 }
             }
 
@@ -486,6 +468,38 @@ namespace EinarEgilsson.Chords
                 float offset = (fretFont.Size - _fretWidth) / 2f;
                 _graphics.DrawString(_baseFret + "fr", fretFont, _foregroundBrush, _xstart + _boxWidth + 0.3f * _fretWidth, _ystart - offset);
             }
+        }
+
+        private float getChordNameSizeInPixels()
+        {
+            Font nameFont = new Font(FONT_NAME, _nameFontSize, GraphicsUnit.Pixel);
+            Font superFont = new Font(FONT_NAME, _superScriptFontSize, GraphicsUnit.Pixel);
+            string[] parts = _chordName.Split('_');
+
+            // Set max parts to 4 for protection
+            int maxParts = parts.Length;
+            if (maxParts > 4)
+            {
+                maxParts = 4;
+            }
+            // count total width of the chord in pixels
+            float chordNameSize = 0;
+            for (int i = 0; i < maxParts; i++)
+            {
+                if (i % 2 == 0)
+                {
+                    // odd parts are normal text
+                    SizeF stringSize2 = _graphics.MeasureString(parts[i], nameFont);
+                    chordNameSize += stringSize2.Width;
+                }
+                else
+                {
+                    // even parts are superscipts
+                    SizeF stringSize2 = _graphics.MeasureString(parts[i], superFont);
+                    chordNameSize += stringSize2.Width;
+                }
+            }
+            return chordNameSize;
         }
 
         private void DrawFingers()

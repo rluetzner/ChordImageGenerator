@@ -313,7 +313,14 @@ namespace EinarEgilsson.Chords
                 _superScriptFontSize += 2;
             }
 
-            _ystart = (float)Math.Round(0.2f * _superScriptFontSize + _nameFontSize + _nutHeight + 1.7f * _markerWidth);
+            if (string.IsNullOrEmpty(_chordName))
+            {
+                _ystart = (float)Math.Round(_nutHeight + 1.7f * _markerWidth);
+            }
+            else
+            {
+                _ystart = (float)Math.Round(0.2f * _superScriptFontSize + _nameFontSize + _nutHeight + 1.7f * _markerWidth);
+            }
             _imageWidth = (int)(_boxWidth + 5 * _fretWidth);
             _imageHeight = (int)(_boxHeight + _ystart + _fretWidth + _fretWidth);
 

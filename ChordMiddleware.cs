@@ -37,6 +37,11 @@ namespace EinarEgilsson.Chords
             var pos = query["pos"].FirstOrDefault() ?? query["p"].FirstOrDefault() ?? "000000";
             var fingers = query["fingers"].FirstOrDefault() ?? query["f"].FirstOrDefault() ?? "------";
             var size = query["size"].FirstOrDefault() ?? query["s"].FirstOrDefault() ?? "1";
+            var fullBarre = query["full_barre"].FirstOrDefault() ?? query["b"].FirstOrDefault() ?? "false";
+            if (!bool.TryParse(fullBarre, out var drawFullBarre))
+            {
+                drawFullBarre = false;
+            }
 
             context.Response.ContentType = "image/png";
             context.Response.GetTypedHeaders().CacheControl =
@@ -46,7 +51,7 @@ namespace EinarEgilsson.Chords
                     MaxAge = TimeSpan.FromDays(7)
                 };
 
-            var image = new ChordBoxImage(chordName, pos, fingers, size);
+            var image = new ChordBoxImage(chordName, pos, fingers, size, drawFullBarre);
             await image.SaveAsync(context.Response.Body);
         }
     }

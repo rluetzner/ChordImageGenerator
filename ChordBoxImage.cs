@@ -71,6 +71,7 @@ namespace EinarEgilsson.Chords
         private int[] _chordPositions = new int[6];
         private char[] _fingers = new char[] { NO_FINGER, NO_FINGER, NO_FINGER,
                                              NO_FINGER, NO_FINGER, NO_FINGER};
+        private readonly bool _drawFullBarre;
         private string _chordName;
         private bool _parseError;
 
@@ -106,8 +107,9 @@ namespace EinarEgilsson.Chords
 
         #region Constructor
 
-        public ChordBoxImage(string name, string chord, string fingers, string size)
+        public ChordBoxImage(string name, string chord, string fingers, string size, bool drawFullBarre = false)
         {
+            _drawFullBarre = drawFullBarre;
             _chordName = ParseName(name);
             ParseChord(chord);
             ParseFingers(fingers);
@@ -546,6 +548,23 @@ namespace EinarEgilsson.Chords
                     {
                         bars.Add(bar.Finger, bar);
                     }
+                }
+            }
+
+            if (_drawFullBarre && bars.Any())
+            {
+                var firstFingerUsedForBarre = bars.Keys.Min();
+                var bar = bars[firstFingerUsedForBarre];
+
+                // If there are chord positions below, including open strings, we can't draw the barre.
+                // However, we should only check on frets with higher notes, e.g. if the barre starts on the second string (A), we can ignore the first string (low E).
+                if (_chordPositions
+                        .Skip(bar.Str)
+                        .Min() 
+                        == bar.Pos)
+                {
+                    bar.Length = 5 - bar.Str;
+                    bars[firstFingerUsedForBarre] = bar;
                 }
             }
 

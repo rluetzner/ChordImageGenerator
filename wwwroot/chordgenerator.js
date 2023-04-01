@@ -46,6 +46,7 @@ function parseChord(chord) {
     var p = (chord.match(/p(os)?=([^&]+)/) || {})[2];
     var f = (chord.match(/f(ingers)?=([^&]+)/) || {})[2];
     var s = (chord.match(/s(ize)?=([^&]+)/) || {})[2];
+    var b = (chord.match(/(full_)?b(arre)?=([^&]+)/) || {})[3];
 
     var doubleDigit = true;
     var tempParts;
@@ -77,6 +78,7 @@ function parseChord(chord) {
     }
 
     $('size').value = s || '2';
+    $('full_barre').checked = b === 'true' || false;
     showChord();
 }
 
@@ -111,7 +113,8 @@ function showChord() {
         chord = chord.replace(/-/g, '');
     }
     var fingers = fE.value + fA.value + fD.value + fG.value + fB.value + fe.value;
-    var chordUrl = encodedName + '.png?p=' + chord + '&f=' + fingers + '&s=' + size;
+    var draw_full_barre = $('full_barre').checked;
+    var chordUrl = encodedName + '.png?p=' + chord + '&f=' + fingers + '&s=' + size + '&b=' + draw_full_barre;
     var url = document.location.protocol + '//' + document.location.host + document.location.pathname.replace('index.html', '');
     url += chordUrl;
 

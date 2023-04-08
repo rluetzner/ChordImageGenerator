@@ -532,39 +532,31 @@ namespace EinarEgilsson.Chords
         private void DrawBars()
         {
             var bars = new Dictionary<char, Bar>();
+            var firstBarre = true;
             for (int i = 0; i < 5; i++)
             {
                 if (_chordPositions[i] != MUTED && _chordPositions[i] != OPEN && _fingers[i] != NO_FINGER && !bars.ContainsKey(_fingers[i]))
                 {
                     Bar bar = new Bar { Str = i, Pos = _chordPositions[i], Length = 0, Finger = _fingers[i] };
-                    for (int j = i + 1; j < 6; j++)
+                    if (_drawFullBarre && firstBarre)
                     {
-                        if (_fingers[j] == bar.Finger && _chordPositions[j] == _chordPositions[i])
+                        bar.Length = 5 - bar.Str;
+                        firstBarre = false;
+                    }
+                    else
+                    {
+                        for (int j = i + 1; j < 6; j++)
                         {
-                            bar.Length = j - i;
+                            if (_fingers[j] == bar.Finger && _chordPositions[j] == _chordPositions[i])
+                            {
+                                bar.Length = j - i;
+                            }
                         }
                     }
                     if (bar.Length > 0)
                     {
                         bars.Add(bar.Finger, bar);
                     }
-                }
-            }
-
-            if (_drawFullBarre && bars.Any())
-            {
-                var firstFingerUsedForBarre = bars.Keys.Min();
-                var bar = bars[firstFingerUsedForBarre];
-
-                // If there are chord positions below, including open strings, we can't draw the barre.
-                // However, we should only check on frets with higher notes, e.g. if the barre starts on the second string (A), we can ignore the first string (low E).
-                if (_chordPositions
-                        .Skip(bar.Str)
-                        .Min() 
-                        == bar.Pos)
-                {
-                    bar.Length = 5 - bar.Str;
-                    bars[firstFingerUsedForBarre] = bar;
                 }
             }
 

@@ -25,12 +25,16 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using SixLabors.Fonts;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Drawing;
+using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 // NOTE 2019-08-27: This code was written more than 10 years ago. I'm updating
 // the surrounding stuff now, getting everything running on .NET Core, just to
@@ -64,7 +68,7 @@ namespace EinarEgilsson.Chords
         #endregion
 
         #region Fields
-        private Bitmap _bitmap;
+        private Image<Rgba32> _bitmap;
         private Graphics _graphics;
 
         private int _size;
@@ -98,8 +102,8 @@ namespace EinarEgilsson.Chords
         private float _superScriptFontSize;
         private float _markerWidth;
 
-        private Brush _foregroundBrush = Brushes.Black;
-        private Brush _backgroundBrush = Brushes.White;
+        private SixLabors.ImageSharp.Color _foregroundBrush = SixLabors.ImageSharp.Color.Black;
+        private SixLabors.ImageSharp.Color _backgroundColor = SixLabors.ImageSharp.Color.White;
 
         private int _baseFret;
 
@@ -124,12 +128,7 @@ namespace EinarEgilsson.Chords
 
         public async Task SaveAsync(Stream output)
         {
-            using (var ms = new MemoryStream())
-            {
-                _bitmap.Save(ms, ImageFormat.Png);
-                ms.Seek(0, SeekOrigin.Begin);
-                await ms.CopyToAsync(output);
-            }
+            await _bitmap.SaveAsPngAsync(output);
         }
 
         public void Save(Stream output)
@@ -300,8 +299,11 @@ namespace EinarEgilsson.Chords
             _boxHeight = FRET_COUNT * (_fretWidth + _lineWidth) + _lineWidth;
 
             // Find out font sizes
-            FontFamily family = new FontFamily(FONT_NAME);
-            float perc = family.GetCellAscent(FontStyle.Regular) / (float)family.GetLineSpacing(FontStyle.Regular);
+            var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
+            family.TryGetMetrics(SixLabors.Fonts.FontStyle.Regular, out var metrics);
+            /* var perc = .735f; */
+            var perc = 1;
+            /* var perc = family.GetCellAscent(System.Drawing.FontStyle.Regular) / (float)family.GetLineSpacing(System.Drawing.FontStyle.Regular); */
             _fretFontSize = _fretWidth / perc;
             _fingerFontSize = _fretWidth * 0.8f;
             _nameFontSize = _fretWidth * 2f / perc;
@@ -332,32 +334,26 @@ namespace EinarEgilsson.Chords
 
         private void CreateImage()
         {
-            _bitmap = new Bitmap(_imageWidth, _imageHeight);
-            _graphics = Graphics.FromImage(_bitmap);
-            _graphics.SmoothingMode = SmoothingMode.HighQuality;
-
             // Widen image if the chord name won't fit.
             var chordNameSize = getChordNameSizeInPixels();
             if (_imageWidth < chordNameSize + 2 * _fretWidth)
             {
-                _imageWidth = (int) (chordNameSize + 2 * _fretWidth);
-                _bitmap = new Bitmap(_imageWidth, _imageHeight);
-                _graphics = Graphics.FromImage(_bitmap);
-                _graphics.SmoothingMode = SmoothingMode.HighQuality;
+                _imageWidth = (int)(chordNameSize + 2 * _fretWidth);
             }
 
-            // We can only do this now. This is a chicken-egg problem.
-            // We need _graphics to measure the text, but we can only get graphics once we've initialized the bitmap.
-            // And only once we have the final image width, can we center the fretboard box.
+            _bitmap = new Image<Rgba32>(_imageWidth, _imageHeight);
+
             _xstart = _imageWidth / 2 - _boxWidth / 2;
 
-            _graphics.FillRectangle(_backgroundBrush, 0, 0, _bitmap.Width, _bitmap.Height);
+            _bitmap.Mutate(ctx => ctx.Clear(_backgroundColor));
             if (_parseError)
             {
                 // Draw red x
-                Pen errorPen = new Pen(Color.Red, 3f);
-                _graphics.DrawLine(errorPen, 0f, 0f, _bitmap.Width, _bitmap.Height);
-                _graphics.DrawLine(errorPen, 0f, _bitmap.Height, _bitmap.Width, 0);
+                var errorColor = SixLabors.ImageSharp.Color.Red;
+                _bitmap.Mutate(ctx => ctx
+                    .DrawLine(errorColor, 3f, new SixLabors.ImageSharp.PointF(0f, 0f), new SixLabors.ImageSharp.PointF(_bitmap.Width, _bitmap.Height))
+                    .DrawLine(errorColor, 3f, new SixLabors.ImageSharp.PointF(0f, _bitmap.Height), new SixLabors.ImageSharp.PointF(_bitmap.Width, 0))
+                  );
             }
             else
             {
@@ -371,25 +367,28 @@ namespace EinarEgilsson.Chords
 
         private void DrawChordBox()
         {
-            Pen pen = new Pen(_foregroundBrush, _lineWidth);
             float totalFretWidth = _fretWidth + _lineWidth;
             for (int i = 0; i <= FRET_COUNT; i++)
             {
                 float y = _ystart + i * totalFretWidth;
-                _graphics.DrawLine(pen, _xstart, y, _xstart + _boxWidth - _lineWidth, y);
+                _bitmap.Mutate(ctx => ctx
+                    .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(_xstart, y), new SixLabors.ImageSharp.PointF(_xstart + _boxWidth - _lineWidth, y)));
             }
 
             for (int i = 0; i < 6; i++)
             {
                 float x = _xstart + (i * totalFretWidth);
-                _graphics.DrawLine(pen, x, _ystart, x, _ystart + _boxHeight - pen.Width);
+                _bitmap.Mutate(ctx => ctx
+                    .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(x, _ystart), new SixLabors.ImageSharp.PointF(x, _ystart + _boxHeight - _lineWidth)));
             }
 
             if (_baseFret == 1)
             {
                 // Need to draw the nut
                 float nutHeight = _fretWidth / 2f;
-                _graphics.FillRectangle(_foregroundBrush, _xstart - _lineWidth / 2f, _ystart - nutHeight, _boxWidth, nutHeight);
+                _bitmap.Mutate(ctx => ctx
+                    .Fill(new DrawingOptions(), _foregroundBrush, new SixLabors.ImageSharp.RectangleF(_xstart - _lineWidth / 2f, _ystart - nutHeight, _boxWidth, nutHeight))
+                );
             }
         }
 
@@ -408,39 +407,44 @@ namespace EinarEgilsson.Chords
                 if (relativePos > 0)
                 {
                     float ypos = relativePos * totalFretWidth + yoffset;
-                    _graphics.FillEllipse(_foregroundBrush, xpos, ypos, _dotWidth, _dotWidth);
+                    _bitmap.Mutate(ctx => ctx
+                        .Fill(new DrawingOptions(), _foregroundBrush, new EllipsePolygon(xpos + _dotWidth / 2, ypos + _dotWidth / 2, _dotWidth, _dotWidth)));
                 }
                 else if (absolutePos == OPEN)
                 {
-                    Pen pen = new Pen(_foregroundBrush, _lineWidth);
                     float ypos = _ystart - _fretWidth;
                     float markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
                     if (_baseFret == 1)
                     {
                         ypos -= _nutHeight;
                     }
-                    _graphics.DrawEllipse(pen, markerXpos, ypos, _markerWidth, _markerWidth);
+                    var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
+                    _bitmap.Mutate(ctx => ctx
+                        .Draw(new DrawingOptions(), pen, new EllipsePolygon(markerXpos + _markerWidth / 2, ypos + _markerWidth / 2, _markerWidth, _markerWidth)));
                 }
                 else if (absolutePos == MUTED)
                 {
-                    Pen pen = new Pen(_foregroundBrush, _lineWidth);
                     float ypos = _ystart - _fretWidth;
                     float markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
                     if (_baseFret == 1)
                     {
                         ypos -= _nutHeight;
                     }
-                    _graphics.DrawLine(pen, markerXpos, ypos, markerXpos + _markerWidth, ypos + _markerWidth);
-                    _graphics.DrawLine(pen, markerXpos, ypos + _markerWidth, markerXpos + _markerWidth, ypos);
+                    var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
+                    _bitmap.Mutate(ctx => ctx
+                        .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(markerXpos, ypos), new SixLabors.ImageSharp.PointF(markerXpos + _markerWidth, ypos + _markerWidth))
+                        .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(markerXpos, ypos + _markerWidth), new SixLabors.ImageSharp.PointF(markerXpos + _markerWidth, ypos)));
                 }
             }
         }
 
         private void DrawChordName()
         {
-            Font nameFont = new Font(FONT_NAME, _nameFontSize, GraphicsUnit.Pixel);
-            Font superFont = new Font(FONT_NAME, _superScriptFontSize, GraphicsUnit.Pixel);
+            var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
+            var nameFont = family.CreateFont(_nameFontSize);
+            var superFont = family.CreateFont(_superScriptFontSize);
             string[] parts = _chordName.Split('_');
+            var xTextStart = _xstart;
 
             // Set max parts to 4 for protection
             int maxParts = parts.Length;
@@ -449,40 +453,87 @@ namespace EinarEgilsson.Chords
                 maxParts = 4;
             }
 
-            var chordNameSize = getChordNameSizeInPixels();
+            // count total width of the chord in pixels
+            float chordNameSize = 0;
+            var nameOptions = new TextOptions(nameFont)
+            {
+                Dpi = (float)_bitmap.Metadata.HorizontalResolution,
+                KerningMode = KerningMode.Standard
+            };
+            var superOptions = new TextOptions(superFont)
+            {
+                Dpi = (float)_bitmap.Metadata.HorizontalResolution,
+                KerningMode = KerningMode.Standard
+            };
+            for (int i = 0; i < maxParts; i++)
+            {
+                if (i % 2 == 0)
+                {
+                    // odd parts are normal text
+                    var stringSize = TextMeasurer.MeasureSize(parts[i], nameOptions).Width;
+                    chordNameSize += 0.75f * stringSize;
+                }
+                else
+                {
+                    // even parts are superscipts
+                    var stringSize = TextMeasurer.MeasureSize(parts[i], superOptions).Width;
+                    chordNameSize += 0.8f * stringSize;
+                }
+            }
 
             // set the x position for the chord name
-            var xTextStart = _imageWidth / 2 - chordNameSize / 2;
+            if (chordNameSize < _boxWidth)
+            {
+                xTextStart = _xstart + ((_boxWidth - chordNameSize) / 2f);
+            }
+            else if ((xTextStart + chordNameSize) > _imageWidth)
+            {
+                // if it goes outside the boundaries
+                var nx = (xTextStart + chordNameSize) / 2f;
+                if (nx < _imageWidth / 2)
+                {
+                    // if it can fit inside the image
+                    xTextStart = (_imageWidth / 2) - nx;
+                }
+                else
+                {
+                    xTextStart = 2f;
+                }
+            }
 
             // Paint the chord
             for (int i = 0; i < maxParts; i++)
             {
                 if (i % 2 == 0)
                 {
-                    SizeF stringSize2 = _graphics.MeasureString(parts[i], nameFont);
-                    _graphics.DrawString(parts[i], nameFont, _foregroundBrush, xTextStart, 0.2f * _superScriptFontSize);
-                    xTextStart += stringSize2.Width;
+                    _bitmap.Mutate(p =>
+                        p.DrawText(parts[i], nameFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, 0.2f * _superScriptFontSize)));
+                    var stringSize = TextMeasurer.MeasureSize(parts[i], nameOptions).Width;
+                    xTextStart += 0.75f * stringSize;
                 }
                 else
                 {
-                    SizeF stringSize2 = _graphics.MeasureString(parts[i], superFont);
-                    _graphics.DrawString(parts[i], superFont, _foregroundBrush, xTextStart, 0);
-                    xTextStart += stringSize2.Width;
+                    _bitmap.Mutate(p =>
+                        p.DrawText(parts[i], superFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, 0)));
+                    var stringSize = TextMeasurer.MeasureSize(parts[i], superOptions).Width;
+                    xTextStart += 0.8f * stringSize;
                 }
             }
 
             if (_baseFret > 1)
             {
-                Font fretFont = new Font(FONT_NAME, _fretFontSize, GraphicsUnit.Pixel);
-                float offset = (fretFont.Size - _fretWidth) / 2f;
-                _graphics.DrawString(_baseFret + "fr", fretFont, _foregroundBrush, _xstart + _boxWidth + 0.3f * _fretWidth, _ystart - offset);
+                var fretFont = family.CreateFont(_fretFontSize);
+                var offset = (fretFont.Size - _fretWidth) / 2f;
+                _bitmap.Mutate(p =>
+                    p.DrawText(_baseFret + "fr", fretFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(_xstart + _boxWidth + 0.3f * _fretWidth, _ystart - offset)));
             }
         }
 
         private float getChordNameSizeInPixels()
         {
-            Font nameFont = new Font(FONT_NAME, _nameFontSize, GraphicsUnit.Pixel);
-            Font superFont = new Font(FONT_NAME, _superScriptFontSize, GraphicsUnit.Pixel);
+            var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
+            var nameFont = family.CreateFont(_nameFontSize);
+            var superFont = family.CreateFont(_superScriptFontSize);
             string[] parts = _chordName.Split('_');
 
             // Set max parts to 4 for protection
@@ -491,6 +542,10 @@ namespace EinarEgilsson.Chords
             {
                 maxParts = 4;
             }
+
+            var nameOptions = new TextOptions(nameFont);
+            var superOptions = new TextOptions(superFont);
+
             // count total width of the chord in pixels
             float chordNameSize = 0;
             for (int i = 0; i < maxParts; i++)
@@ -498,13 +553,13 @@ namespace EinarEgilsson.Chords
                 if (i % 2 == 0)
                 {
                     // odd parts are normal text
-                    SizeF stringSize2 = _graphics.MeasureString(parts[i], nameFont);
+                    var stringSize2 = TextMeasurer.MeasureSize(parts[i], nameOptions);
                     chordNameSize += stringSize2.Width;
                 }
                 else
                 {
                     // even parts are superscipts
-                    SizeF stringSize2 = _graphics.MeasureString(parts[i], superFont);
+                    var stringSize2 = TextMeasurer.MeasureSize(parts[i], superOptions);
                     chordNameSize += stringSize2.Width;
                 }
             }
@@ -514,14 +569,25 @@ namespace EinarEgilsson.Chords
         private void DrawFingers()
         {
             float xpos = _xstart + (0.5f * _lineWidth);
-            float ypos = _ystart + _boxHeight;
-            Font font = new Font(FONT_NAME, _fingerFontSize);
+            float ypos = _ystart + _boxHeight + _lineWidth;
+
+            var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
+            var fingerFont = family.CreateFont(_fingerFontSize);
+
             foreach (char finger in _fingers)
             {
                 if (finger != NO_FINGER)
                 {
-                    SizeF charSize = _graphics.MeasureString(finger.ToString(), font);
-                    _graphics.DrawString(finger.ToString(), font, _foregroundBrush, xpos - (0.5f * charSize.Width), ypos);
+                    var charSize = TextMeasurer.MeasureSize(finger.ToString(), new TextOptions(fingerFont));
+                    var textOptions = new RichTextOptions(fingerFont)
+                    {
+                        Origin = new PointF(xpos, ypos),
+                        VerticalAlignment = VerticalAlignment.Top,
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    };
+                    _bitmap.Mutate(ctx => ctx
+                        .DrawText(textOptions, finger.ToString(), _foregroundBrush)
+                        );
                 }
                 xpos += (_fretWidth + _lineWidth);
             }
@@ -560,8 +626,8 @@ namespace EinarEgilsson.Chords
                 }
             }
 
-            float totalFretWidth = _fretWidth + _lineWidth;
-            float arcWidth = _dotWidth / 7;
+            var totalFretWidth = _fretWidth + _lineWidth;
+            var arcWidth = (float) _dotWidth / 7;
             foreach (Bar bar in bars.Values)
             {
                 float yTempOffset = 0.0f;
@@ -572,16 +638,23 @@ namespace EinarEgilsson.Chords
                     yTempOffset = -0.3f * totalFretWidth;
                 }
 
-                float xstart = _xstart + bar.Str * totalFretWidth - (_dotWidth / 2);
-                float y = _ystart + (bar.Pos - _baseFret) * totalFretWidth - (0.6f * totalFretWidth) + yTempOffset;
-                Pen pen = new Pen(_foregroundBrush, arcWidth);
-                Pen pen2 = new Pen(_foregroundBrush, 1.3f * arcWidth);
+                var xstart = _xstart + bar.Str * totalFretWidth - (_dotWidth / 2);
+                var y = _ystart + (bar.Pos - _baseFret) * totalFretWidth - (0.1f * totalFretWidth) + yTempOffset;
+                var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, arcWidth);
+                var pen2 = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, 1.3f * arcWidth);
 
-                float barWidth = bar.Length * totalFretWidth + _dotWidth;
+                var barWidth = bar.Length * totalFretWidth + _dotWidth;
+                var arc1 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y), new SizeF(barWidth / 2, (totalFretWidth - pen.StrokeWidth) / 2), 0, -1, -178);
+                var path1 = new SixLabors.ImageSharp.Drawing.Path(arc1);
+                var arc2 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y - arcWidth / 2), new SizeF(barWidth / 2, (totalFretWidth + 0.5f * arcWidth - pen2.StrokeWidth) / 2), 0, -4, -172);
+                var path2 = new SixLabors.ImageSharp.Drawing.Path(arc2);
+                var arc3 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y - 1.5f * arcWidth / 2), new SizeF(barWidth / 2, (totalFretWidth + 1.5f * arcWidth - pen2.StrokeWidth) / 2), 0, -20, -150);
+                var path3 = new SixLabors.ImageSharp.Drawing.Path(arc3);
 
-                _graphics.DrawArc(pen, xstart, y, barWidth, totalFretWidth, -1, -178);
-                _graphics.DrawArc(pen2, xstart, y - arcWidth, barWidth, totalFretWidth + arcWidth, -4, -172);
-                _graphics.DrawArc(pen2, xstart, y - 1.5f * arcWidth, barWidth, totalFretWidth + 3 * arcWidth, -20, -150);
+                _bitmap.Mutate(ctx => ctx
+                    .Draw(pen, path1)
+                    .Draw(pen2, path2)
+                    .Draw(pen2, path3));
             }
         }
 

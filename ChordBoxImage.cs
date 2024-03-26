@@ -451,52 +451,23 @@ namespace EinarEgilsson.Chords
             }
 
             // count total width of the chord in pixels
-            float chordNameSize = 0;
-            var nameOptions = new TextOptions(nameFont)
-            {
-                Dpi = (float)_bitmap.Metadata.HorizontalResolution,
-                KerningMode = KerningMode.Standard
-            };
-            var superOptions = new TextOptions(superFont)
-            {
-                Dpi = (float)_bitmap.Metadata.HorizontalResolution,
-                KerningMode = KerningMode.Standard
-            };
-            for (int i = 0; i < maxParts; i++)
-            {
-                if (i % 2 == 0)
-                {
-                    // odd parts are normal text
-                    var stringSize = TextMeasurer.MeasureSize(parts[i], nameOptions).Width;
-                    chordNameSize += 0.75f * stringSize;
-                }
-                else
-                {
-                    // even parts are superscipts
-                    var stringSize = TextMeasurer.MeasureSize(parts[i], superOptions).Width;
-                    chordNameSize += 0.8f * stringSize;
-                }
-            }
+            float chordNameSize = getChordNameSizeInPixels();
 
-            // set the x position for the chord name
-            if (chordNameSize < _boxWidth)
+            xTextStart = (_imageWidth - chordNameSize) / 2;
+
+            var nameOptions = new RichTextOptions(nameFont)
             {
-                xTextStart = _xstart + ((_boxWidth - chordNameSize) / 2f);
-            }
-            else if ((xTextStart + chordNameSize) > _imageWidth)
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+            var superOptions = new RichTextOptions(superFont)
             {
-                // if it goes outside the boundaries
-                var nx = (xTextStart + chordNameSize) / 2f;
-                if (nx < _imageWidth / 2)
-                {
-                    // if it can fit inside the image
-                    xTextStart = (_imageWidth / 2) - nx;
-                }
-                else
-                {
-                    xTextStart = 2f;
-                }
-            }
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+
+            var space = _size;
+            var yOffset = 2 * _lineWidth;
 
             // Paint the chord
             for (int i = 0; i < maxParts; i++)
@@ -504,16 +475,21 @@ namespace EinarEgilsson.Chords
                 if (i % 2 == 0)
                 {
                     _bitmap.Mutate(p =>
-                        p.DrawText(parts[i], nameFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, 0.2f * _superScriptFontSize)));
+                        p.DrawText(parts[i], nameFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, 0.2f * _superScriptFontSize + yOffset)));
                     var stringSize = TextMeasurer.MeasureSize(parts[i], nameOptions).Width;
-                    xTextStart += 0.75f * stringSize;
+                    xTextStart += stringSize;
                 }
                 else
                 {
                     _bitmap.Mutate(p =>
-                        p.DrawText(parts[i], superFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, 0)));
+                        p.DrawText(parts[i], superFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, yOffset)));
                     var stringSize = TextMeasurer.MeasureSize(parts[i], superOptions).Width;
-                    xTextStart += 0.8f * stringSize;
+                    xTextStart += stringSize;
+                }
+
+                if (i < maxParts - 1)
+                {
+                    xTextStart += space;
                 }
             }
 
@@ -543,14 +519,12 @@ namespace EinarEgilsson.Chords
             string[] parts = _chordName.Split('_');
 
             // Set max parts to 4 for protection
-            int maxParts = parts.Length;
-            if (maxParts > 4)
-            {
-                maxParts = 4;
-            }
+            var maxParts = Math.Min(4, parts.Length);
 
             var nameOptions = new TextOptions(nameFont);
             var superOptions = new TextOptions(superFont);
+
+            var space = _size;
 
             // count total width of the chord in pixels
             float chordNameSize = 0;
@@ -567,6 +541,11 @@ namespace EinarEgilsson.Chords
                     // even parts are superscipts
                     var stringSize2 = TextMeasurer.MeasureSize(parts[i], superOptions);
                     chordNameSize += stringSize2.Width;
+                }
+
+                if (i < maxParts - 1)
+                {
+                    chordNameSize += space;
                 }
             }
             return chordNameSize;

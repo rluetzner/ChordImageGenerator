@@ -24,7 +24,6 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -69,7 +68,6 @@ namespace EinarEgilsson.Chords
 
         #region Fields
         private Image<Rgba32> _bitmap;
-        private Graphics _graphics;
 
         private int _size;
         private int[] _chordPositions = new int[6];

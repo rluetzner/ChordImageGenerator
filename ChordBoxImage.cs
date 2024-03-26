@@ -520,9 +520,18 @@ namespace EinarEgilsson.Chords
             if (_baseFret > 1)
             {
                 var fretFont = family.CreateFont(_fretFontSize);
-                var offset = (fretFont.Size - _fretWidth) / 2f;
+                var xpos = _xstart + _boxWidth + _lineWidth / 2 + 0.3f * _fretWidth;
+                var ypos = _ystart + _lineWidth - (fretFont.Size - _fretWidth) / 2f;
+                var textOption = new RichTextOptions(fretFont)
+                {
+                    VerticalAlignment = VerticalAlignment.Top,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Origin = new PointF(xpos, ypos),
+                    KerningMode = KerningMode.Standard
+                };
+                var text = _baseFret + "fr";
                 _bitmap.Mutate(p =>
-                    p.DrawText(_baseFret + "fr", fretFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(_xstart + _boxWidth + 0.3f * _fretWidth, _ystart - offset)));
+                    p.DrawText(textOption, text, _foregroundBrush));
             }
         }
 

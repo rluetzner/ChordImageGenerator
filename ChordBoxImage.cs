@@ -59,7 +59,7 @@ namespace EinarEgilsson.Chords
         const int OPEN = 0;
         const int MUTED = -1;
         const int FRET_COUNT = 5;
-        const string FONT_NAME = "Arial";
+        const string FONT_NAME = "DejaVu Sans";
 
         #endregion
 

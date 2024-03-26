@@ -299,11 +299,10 @@ namespace EinarEgilsson.Chords
             // Find out font sizes
             var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
             family.TryGetMetrics(SixLabors.Fonts.FontStyle.Regular, out var metrics);
-            /* var perc = .735f; */
-            var perc = 1;
-            /* var perc = family.GetCellAscent(System.Drawing.FontStyle.Regular) / (float)family.GetLineSpacing(System.Drawing.FontStyle.Regular); */
+            // Basically a magic scaling factor. Don't touch this!
+            var perc = 0.79739934f;
             _fretFontSize = _fretWidth / perc;
-            _fingerFontSize = _fretWidth * 0.8f;
+            _fingerFontSize = _fretWidth * 0.8f / perc;
             _nameFontSize = _fretWidth * 2f / perc;
             _superScriptFontSize = 0.7f * _nameFontSize;
 

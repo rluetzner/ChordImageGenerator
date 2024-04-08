@@ -159,7 +159,7 @@ namespace EinarEgilsson.Chords
             }
 
             var splitString = name.Split('_');
-            for (int i = 1; i < splitString.Length; i++)
+            for (var i = 1; i < splitString.Length; i++)
             {
                 if (i % 2 == 0)
                 {
@@ -190,7 +190,7 @@ namespace EinarEgilsson.Chords
             }
 
             var positions = GetFretPositions(chord);
-            for (int i = 0; i < 6; i++)
+            for (var i = 0; i < 6; i++)
             {
                 if (positions[i].ToUpper() == "X")
                 {
@@ -243,7 +243,7 @@ namespace EinarEgilsson.Chords
             }
 
             var parts = new string[6];
-            for (int i = 0; i < 6; i++)
+            for (var i = 0; i < 6; i++)
             {
                 parts[i] = chordInput[i].ToString();
             }
@@ -358,17 +358,17 @@ namespace EinarEgilsson.Chords
 
         private void DrawChordBox()
         {
-            float totalFretWidth = _fretWidth + _lineWidth;
-            for (int i = 0; i <= FRET_COUNT; i++)
+            var totalFretWidth = _fretWidth + _lineWidth;
+            for (var i = 0; i <= FRET_COUNT; i++)
             {
-                float y = _ystart + i * totalFretWidth;
+                var y = _ystart + i * totalFretWidth;
                 _image.Mutate(ctx => ctx
                     .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(_xstart, y), new SixLabors.ImageSharp.PointF(_xstart + _boxWidth - _lineWidth, y)));
             }
 
-            for (int i = 0; i < 6; i++)
+            for (var i = 0; i < 6; i++)
             {
-                float x = _xstart + (i * totalFretWidth);
+                var x = _xstart + (i * totalFretWidth);
                 _image.Mutate(ctx => ctx
                     .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(x, _ystart), new SixLabors.ImageSharp.PointF(x, _ystart + _boxHeight - _lineWidth)));
             }
@@ -376,7 +376,7 @@ namespace EinarEgilsson.Chords
             if (_baseFret == 1)
             {
                 // Need to draw the nut
-                float nutHeight = _fretWidth / 2f;
+                var nutHeight = _fretWidth / 2f;
                 _image.Mutate(ctx => ctx
                     .Fill(new DrawingOptions(), _foregroundBrush, new SixLabors.ImageSharp.RectangleF(_xstart - _lineWidth / 2f, _ystart - nutHeight, _boxWidth, nutHeight))
                 );
@@ -385,42 +385,48 @@ namespace EinarEgilsson.Chords
 
         private void DrawChordPositions()
         {
-            float yoffset = _ystart - _fretWidth;
-            float xoffset = _lineWidth / 2f;
-            float totalFretWidth = _fretWidth + _lineWidth;
-            float xfirstString = _xstart + 0.5f * _lineWidth;
-            for (int i = 0; i < _chordPositions.Length; i++)
-            {
-                int absolutePos = _chordPositions[i];
-                int relativePos = absolutePos - _baseFret + 1;
+            var yoffset = _ystart - _fretWidth;
+            var xoffset = _lineWidth / 2f;
+            var totalFretWidth = _fretWidth + _lineWidth;
+            var xfirstString = _xstart + 0.5f * _lineWidth;
 
-                float xpos = _xstart - (0.5f * _fretWidth) + (0.5f * _lineWidth) + (i * totalFretWidth);
+            for (var i = 0; i < _chordPositions.Length; i++)
+            {
+                var absolutePos = _chordPositions[i];
+                var relativePos = absolutePos - _baseFret + 1;
+
+                var xpos = _xstart - (0.5f * _fretWidth) + (0.5f * _lineWidth) + (i * totalFretWidth);
+
                 if (relativePos > 0)
                 {
-                    float ypos = relativePos * totalFretWidth + yoffset;
+                    var ypos = relativePos * totalFretWidth + yoffset;
                     _image.Mutate(ctx => ctx
                         .Fill(new DrawingOptions(), _foregroundBrush, new EllipsePolygon(xpos + _dotWidth / 2, ypos + _dotWidth / 2, _dotWidth, _dotWidth)));
                 }
                 else if (absolutePos == OPEN)
                 {
-                    float ypos = _ystart - _fretWidth;
-                    float markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
+                    var ypos = _ystart - _fretWidth;
+                    var markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
+
                     if (_baseFret == 1)
                     {
                         ypos -= _nutHeight;
                     }
+
                     var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
                     _image.Mutate(ctx => ctx
                         .Draw(new DrawingOptions(), pen, new EllipsePolygon(markerXpos + _markerWidth / 2, ypos + _markerWidth / 2, _markerWidth, _markerWidth)));
                 }
                 else if (absolutePos == MUTED)
                 {
-                    float ypos = _ystart - _fretWidth;
-                    float markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
+                    var ypos = _ystart - _fretWidth;
+                    var markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
+
                     if (_baseFret == 1)
                     {
                         ypos -= _nutHeight;
                     }
+
                     var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
                     _image.Mutate(ctx => ctx
                         .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(markerXpos, ypos), new SixLabors.ImageSharp.PointF(markerXpos + _markerWidth, ypos + _markerWidth))
@@ -434,18 +440,18 @@ namespace EinarEgilsson.Chords
             var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
             var nameFont = family.CreateFont(_nameFontSize);
             var superFont = family.CreateFont(_superScriptFontSize);
-            string[] parts = _chordName.Split('_');
+            var parts = _chordName.Split('_');
             var xTextStart = _xstart;
 
             // Set max parts to 4 for protection
-            int maxParts = parts.Length;
+            var maxParts = parts.Length;
             if (maxParts > 4)
             {
                 maxParts = 4;
             }
 
             // count total width of the chord in pixels
-            float chordNameSize = getChordNameSizeInPixels();
+            var chordNameSize = getChordNameSizeInPixels();
 
             xTextStart = (_imageWidth - chordNameSize) / 2;
 
@@ -454,6 +460,7 @@ namespace EinarEgilsson.Chords
                 VerticalAlignment = VerticalAlignment.Top,
                 HorizontalAlignment = HorizontalAlignment.Left,
             };
+
             var superOptions = new RichTextOptions(superFont)
             {
                 VerticalAlignment = VerticalAlignment.Top,
@@ -464,7 +471,7 @@ namespace EinarEgilsson.Chords
             var yOffset = 2 * _lineWidth;
 
             // Paint the chord
-            for (int i = 0; i < maxParts; i++)
+            for (var i = 0; i < maxParts; i++)
             {
                 if (i % 2 == 0)
                 {
@@ -499,6 +506,7 @@ namespace EinarEgilsson.Chords
                     Origin = new PointF(xpos, ypos),
                     KerningMode = KerningMode.Standard
                 };
+
                 var text = _baseFret + "fr";
                 _image.Mutate(p =>
                     p.DrawText(textOption, text, _foregroundBrush));
@@ -510,7 +518,7 @@ namespace EinarEgilsson.Chords
             var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
             var nameFont = family.CreateFont(_nameFontSize);
             var superFont = family.CreateFont(_superScriptFontSize);
-            string[] parts = _chordName.Split('_');
+            var parts = _chordName.Split('_');
 
             // Set max parts to 4 for protection
             var maxParts = Math.Min(4, parts.Length);
@@ -521,8 +529,8 @@ namespace EinarEgilsson.Chords
             var space = _size;
 
             // count total width of the chord in pixels
-            float chordNameSize = 0;
-            for (int i = 0; i < maxParts; i++)
+            var chordNameSize = 0f;
+            for (var i = 0; i < maxParts; i++)
             {
                 if (i % 2 == 0)
                 {
@@ -547,13 +555,13 @@ namespace EinarEgilsson.Chords
 
         private void DrawFingers()
         {
-            float xpos = _xstart + (0.5f * _lineWidth);
-            float ypos = _ystart + _boxHeight + _lineWidth;
+            var xpos = _xstart + (0.5f * _lineWidth);
+            var ypos = _ystart + _boxHeight + _lineWidth;
 
             var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
             var fingerFont = family.CreateFont(_fingerFontSize);
 
-            foreach (char finger in _fingers)
+            foreach (var finger in _fingers)
             {
                 if (finger != NO_FINGER)
                 {
@@ -564,6 +572,7 @@ namespace EinarEgilsson.Chords
                         VerticalAlignment = VerticalAlignment.Top,
                         HorizontalAlignment = HorizontalAlignment.Center
                     };
+
                     _image.Mutate(ctx => ctx
                         .DrawText(textOptions, finger.ToString(), _foregroundBrush)
                         );
@@ -578,11 +587,13 @@ namespace EinarEgilsson.Chords
         {
             var bars = new Dictionary<char, Bar>();
             var firstBarre = true;
-            for (int i = 0; i < 5; i++)
+
+            for (var i = 0; i < 5; i++)
             {
                 if (_chordPositions[i] != MUTED && _chordPositions[i] != OPEN && _fingers[i] != NO_FINGER && !bars.ContainsKey(_fingers[i]))
                 {
-                    Bar bar = new Bar { Str = i, Pos = _chordPositions[i], Length = 0, Finger = _fingers[i] };
+                    var bar = new Bar { Str = i, Pos = _chordPositions[i], Length = 0, Finger = _fingers[i] };
+
                     if (_drawFullBarre && firstBarre)
                     {
                         bar.Length = 5 - bar.Str;
@@ -590,7 +601,7 @@ namespace EinarEgilsson.Chords
                     }
                     else
                     {
-                        for (int j = i + 1; j < 6; j++)
+                        for (var j = i + 1; j < 6; j++)
                         {
                             if (_fingers[j] == bar.Finger && _chordPositions[j] == _chordPositions[i])
                             {
@@ -607,9 +618,10 @@ namespace EinarEgilsson.Chords
 
             var totalFretWidth = _fretWidth + _lineWidth;
             var arcWidth = (float) _dotWidth / 7;
-            foreach (Bar bar in bars.Values)
+
+            foreach (var bar in bars.Values)
             {
-                float yTempOffset = 0.0f;
+                var yTempOffset = 0.0f;
 
                 if (bar.Pos == 1)
                 {

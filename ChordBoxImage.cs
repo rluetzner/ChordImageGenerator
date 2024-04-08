@@ -363,27 +363,45 @@ namespace EinarEgilsson.Chords
         private void DrawChordBox()
         {
             var totalFretWidth = _fretWidth + _lineWidth;
-            for (var i = 0; i <= FRET_COUNT; i++)
+
+            drawHorizontalFrets();
+            drawStrings();
+            drawNutIfNeeded();
+
+            // Only local methods from here on.
+            return;
+
+            void drawHorizontalFrets()
             {
-                var y = _ystart + i * totalFretWidth;
-                _image.Mutate(ctx => ctx
-                    .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(_xstart, y), new SixLabors.ImageSharp.PointF(_xstart + _boxWidth - _lineWidth, y)));
+                for (var i = 0; i <= FRET_COUNT; i++)
+                {
+                    var y = _ystart + i * totalFretWidth;
+                    _image.Mutate(ctx => ctx
+                        .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(_xstart, y), new SixLabors.ImageSharp.PointF(_xstart + _boxWidth - _lineWidth, y)));
+                }
             }
 
-            for (var i = 0; i < 6; i++)
+            void drawStrings()
             {
-                var x = _xstart + (i * totalFretWidth);
-                _image.Mutate(ctx => ctx
-                    .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(x, _ystart), new SixLabors.ImageSharp.PointF(x, _ystart + _boxHeight - _lineWidth)));
+                for (var i = 0; i < 6; i++)
+                {
+                    // Draw strings.
+                    var x = _xstart + (i * totalFretWidth);
+                    _image.Mutate(ctx => ctx
+                        .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(x, _ystart), new SixLabors.ImageSharp.PointF(x, _ystart + _boxHeight - _lineWidth)));
+                }
             }
 
-            if (_baseFret == 1)
+            void drawNutIfNeeded()
             {
-                // Need to draw the nut
-                var nutHeight = _fretWidth / 2f;
-                _image.Mutate(ctx => ctx
-                    .Fill(new DrawingOptions(), _foregroundBrush, new SixLabors.ImageSharp.RectangleF(_xstart - _lineWidth / 2f, _ystart - nutHeight, _boxWidth, nutHeight))
-                );
+                if (_baseFret == 1)
+                {
+                    // Need to draw the nut
+                    var nutHeight = _fretWidth / 2f;
+                    _image.Mutate(ctx => ctx
+                        .Fill(new DrawingOptions(), _foregroundBrush, new SixLabors.ImageSharp.RectangleF(_xstart - _lineWidth / 2f, _ystart - nutHeight, _boxWidth, nutHeight))
+                    );
+                }
             }
         }
 
@@ -403,39 +421,57 @@ namespace EinarEgilsson.Chords
 
                 if (relativePos > 0)
                 {
-                    var ypos = relativePos * totalFretWidth + yoffset;
-                    _image.Mutate(ctx => ctx
-                        .Fill(new DrawingOptions(), _foregroundBrush, new EllipsePolygon(xpos + _dotWidth / 2, ypos + _dotWidth / 2, _dotWidth, _dotWidth)));
+                    drawFilledDotOnString(relativePos, xpos);
                 }
                 else if (absolutePos == OPEN)
                 {
-                    var ypos = _ystart - _fretWidth;
-                    var markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
-
-                    if (_baseFret == 1)
-                    {
-                        ypos -= _nutHeight;
-                    }
-
-                    var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
-                    _image.Mutate(ctx => ctx
-                        .Draw(new DrawingOptions(), pen, new EllipsePolygon(markerXpos + _markerWidth / 2, ypos + _markerWidth / 2, _markerWidth, _markerWidth)));
+                    drawCircleOnTop(xpos);
                 }
                 else if (absolutePos == MUTED)
                 {
-                    var ypos = _ystart - _fretWidth;
-                    var markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
-
-                    if (_baseFret == 1)
-                    {
-                        ypos -= _nutHeight;
-                    }
-
-                    var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
-                    _image.Mutate(ctx => ctx
-                        .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(markerXpos, ypos), new SixLabors.ImageSharp.PointF(markerXpos + _markerWidth, ypos + _markerWidth))
-                        .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(markerXpos, ypos + _markerWidth), new SixLabors.ImageSharp.PointF(markerXpos + _markerWidth, ypos)));
+                    drawXOnTop(xpos);
                 }
+            }
+
+            // Only local methods from here on.
+            return;
+
+            void drawFilledDotOnString(int relativePos, float xpos)
+            {
+                var ypos = relativePos * totalFretWidth + yoffset;
+                _image.Mutate(ctx => ctx
+                    .Fill(new DrawingOptions(), _foregroundBrush, new EllipsePolygon(xpos + _dotWidth / 2, ypos + _dotWidth / 2, _dotWidth, _dotWidth)));
+            }
+
+            void drawCircleOnTop(float xpos)
+            {
+                var ypos = _ystart - _fretWidth;
+                var markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
+
+                if (_baseFret == 1)
+                {
+                    ypos -= _nutHeight;
+                }
+
+                var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
+                _image.Mutate(ctx => ctx
+                    .Draw(new DrawingOptions(), pen, new EllipsePolygon(markerXpos + _markerWidth / 2, ypos + _markerWidth / 2, _markerWidth, _markerWidth)));
+            }
+
+            void drawXOnTop(float xpos)
+            {
+                var ypos = _ystart - _fretWidth;
+                var markerXpos = xpos + ((_dotWidth - _markerWidth) / 2f);
+
+                if (_baseFret == 1)
+                {
+                    ypos -= _nutHeight;
+                }
+
+                var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
+                _image.Mutate(ctx => ctx
+                    .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(markerXpos, ypos), new SixLabors.ImageSharp.PointF(markerXpos + _markerWidth, ypos + _markerWidth))
+                    .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(markerXpos, ypos + _markerWidth), new SixLabors.ImageSharp.PointF(markerXpos + _markerWidth, ypos)));
             }
         }
 
@@ -569,7 +605,6 @@ namespace EinarEgilsson.Chords
             {
                 if (finger != NO_FINGER)
                 {
-                    var charSize = TextMeasurer.MeasureSize(finger.ToString(), new TextOptions(fingerFont));
                     var textOptions = new RichTextOptions(fingerFont)
                     {
                         Origin = new PointF(xpos, ypos),
@@ -578,10 +613,10 @@ namespace EinarEgilsson.Chords
                     };
 
                     _image.Mutate(ctx => ctx
-                        .DrawText(textOptions, finger.ToString(), _foregroundBrush)
-                        );
+                        .DrawText(textOptions, finger.ToString(), _foregroundBrush));
                 }
-                xpos += (_fretWidth + _lineWidth);
+
+                xpos += _fretWidth + _lineWidth;
             }
         }
 

@@ -51,7 +51,7 @@ namespace EinarEgilsson.Chords
                     MaxAge = TimeSpan.FromDays(7)
                 };
 
-            var image = new ChordBoxImage(chordName, pos, fingers, size, drawFullBarre);
+            using var image = new ChordBoxImage(chordName, pos, fingers, size, drawFullBarre);
             await image.SaveAsync(context.Response.Body);
         }
     }

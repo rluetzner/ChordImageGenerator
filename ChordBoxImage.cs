@@ -137,14 +137,9 @@ namespace EinarEgilsson.Chords
 
         public byte[] GetBytes()
         {
-            using (var ms = new MemoryStream())
-            {
-                Save(ms);
-                ms.Seek(0, SeekOrigin.Begin);
-                byte[] buffer = new byte[ms.Length];
-                ms.Read(buffer, 0, buffer.Length);
-                return buffer;
-            }
+            using var ms = new MemoryStream();
+            Save(ms);
+            return ms.GetBuffer();
         }
 
         public void Dispose()

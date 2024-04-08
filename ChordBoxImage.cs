@@ -64,6 +64,8 @@ namespace EinarEgilsson.Chords
         const int FRET_COUNT = 5;
         const string FONT_NAME = "DejaVu Sans";
 
+        private readonly SixLabors.ImageSharp.Color _foregroundBrush = SixLabors.ImageSharp.Color.Black;
+        private readonly SixLabors.ImageSharp.Color _backgroundColor = SixLabors.ImageSharp.Color.White;
         #endregion
 
         #region Fields
@@ -99,9 +101,6 @@ namespace EinarEgilsson.Chords
         private float _nameFontSize;
         private float _superScriptFontSize;
         private float _markerWidth;
-
-        private SixLabors.ImageSharp.Color _foregroundBrush = SixLabors.ImageSharp.Color.Black;
-        private SixLabors.ImageSharp.Color _backgroundColor = SixLabors.ImageSharp.Color.White;
 
         private int _baseFret;
 

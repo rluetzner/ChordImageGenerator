@@ -66,10 +66,11 @@ namespace EinarEgilsson.Chords
 
         private readonly SixLabors.ImageSharp.Color _foregroundBrush = SixLabors.ImageSharp.Color.Black;
         private readonly SixLabors.ImageSharp.Color _backgroundColor = SixLabors.ImageSharp.Color.White;
+
         #endregion
 
         #region Fields
-        private Image<Rgba32> _bitmap;
+        private Image<Rgba32> _image;
 
         private int _size;
         private int[] _chordPositions = new int[6];
@@ -125,7 +126,7 @@ namespace EinarEgilsson.Chords
 
         public async Task SaveAsync(Stream output)
         {
-            await _bitmap.SaveAsPngAsync(output);
+            await _image.SaveAsPngAsync(output);
         }
 
         public void Save(Stream output)
@@ -146,10 +147,9 @@ namespace EinarEgilsson.Chords
             }
         }
 
-
         public void Dispose()
         {
-            _bitmap.Dispose();
+            _image.Dispose();
         }
 
         #endregion
@@ -337,18 +337,18 @@ namespace EinarEgilsson.Chords
                 _imageWidth = (int)(chordNameSize + 2 * _fretWidth);
             }
 
-            _bitmap = new Image<Rgba32>(_imageWidth, _imageHeight);
+            _image = new Image<Rgba32>(_imageWidth, _imageHeight);
 
             _xstart = _imageWidth / 2 - _boxWidth / 2;
 
-            _bitmap.Mutate(ctx => ctx.Clear(_backgroundColor));
+            _image.Mutate(ctx => ctx.Clear(_backgroundColor));
             if (_parseError)
             {
                 // Draw red x
                 var errorColor = SixLabors.ImageSharp.Color.Red;
-                _bitmap.Mutate(ctx => ctx
-                    .DrawLine(errorColor, 3f, new SixLabors.ImageSharp.PointF(0f, 0f), new SixLabors.ImageSharp.PointF(_bitmap.Width, _bitmap.Height))
-                    .DrawLine(errorColor, 3f, new SixLabors.ImageSharp.PointF(0f, _bitmap.Height), new SixLabors.ImageSharp.PointF(_bitmap.Width, 0))
+                _image.Mutate(ctx => ctx
+                    .DrawLine(errorColor, 3f, new SixLabors.ImageSharp.PointF(0f, 0f), new SixLabors.ImageSharp.PointF(_image.Width, _image.Height))
+                    .DrawLine(errorColor, 3f, new SixLabors.ImageSharp.PointF(0f, _image.Height), new SixLabors.ImageSharp.PointF(_image.Width, 0))
                   );
             }
             else
@@ -367,14 +367,14 @@ namespace EinarEgilsson.Chords
             for (int i = 0; i <= FRET_COUNT; i++)
             {
                 float y = _ystart + i * totalFretWidth;
-                _bitmap.Mutate(ctx => ctx
+                _image.Mutate(ctx => ctx
                     .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(_xstart, y), new SixLabors.ImageSharp.PointF(_xstart + _boxWidth - _lineWidth, y)));
             }
 
             for (int i = 0; i < 6; i++)
             {
                 float x = _xstart + (i * totalFretWidth);
-                _bitmap.Mutate(ctx => ctx
+                _image.Mutate(ctx => ctx
                     .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(x, _ystart), new SixLabors.ImageSharp.PointF(x, _ystart + _boxHeight - _lineWidth)));
             }
 
@@ -382,7 +382,7 @@ namespace EinarEgilsson.Chords
             {
                 // Need to draw the nut
                 float nutHeight = _fretWidth / 2f;
-                _bitmap.Mutate(ctx => ctx
+                _image.Mutate(ctx => ctx
                     .Fill(new DrawingOptions(), _foregroundBrush, new SixLabors.ImageSharp.RectangleF(_xstart - _lineWidth / 2f, _ystart - nutHeight, _boxWidth, nutHeight))
                 );
             }
@@ -403,7 +403,7 @@ namespace EinarEgilsson.Chords
                 if (relativePos > 0)
                 {
                     float ypos = relativePos * totalFretWidth + yoffset;
-                    _bitmap.Mutate(ctx => ctx
+                    _image.Mutate(ctx => ctx
                         .Fill(new DrawingOptions(), _foregroundBrush, new EllipsePolygon(xpos + _dotWidth / 2, ypos + _dotWidth / 2, _dotWidth, _dotWidth)));
                 }
                 else if (absolutePos == OPEN)
@@ -415,7 +415,7 @@ namespace EinarEgilsson.Chords
                         ypos -= _nutHeight;
                     }
                     var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
-                    _bitmap.Mutate(ctx => ctx
+                    _image.Mutate(ctx => ctx
                         .Draw(new DrawingOptions(), pen, new EllipsePolygon(markerXpos + _markerWidth / 2, ypos + _markerWidth / 2, _markerWidth, _markerWidth)));
                 }
                 else if (absolutePos == MUTED)
@@ -427,7 +427,7 @@ namespace EinarEgilsson.Chords
                         ypos -= _nutHeight;
                     }
                     var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, _lineWidth);
-                    _bitmap.Mutate(ctx => ctx
+                    _image.Mutate(ctx => ctx
                         .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(markerXpos, ypos), new SixLabors.ImageSharp.PointF(markerXpos + _markerWidth, ypos + _markerWidth))
                         .DrawLine(_foregroundBrush, _lineWidth, new SixLabors.ImageSharp.PointF(markerXpos, ypos + _markerWidth), new SixLabors.ImageSharp.PointF(markerXpos + _markerWidth, ypos)));
                 }
@@ -473,14 +473,14 @@ namespace EinarEgilsson.Chords
             {
                 if (i % 2 == 0)
                 {
-                    _bitmap.Mutate(p =>
+                    _image.Mutate(p =>
                         p.DrawText(parts[i], nameFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, 0.2f * _superScriptFontSize + yOffset)));
                     var stringSize = TextMeasurer.MeasureSize(parts[i], nameOptions).Width;
                     xTextStart += stringSize;
                 }
                 else
                 {
-                    _bitmap.Mutate(p =>
+                    _image.Mutate(p =>
                         p.DrawText(parts[i], superFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, yOffset)));
                     var stringSize = TextMeasurer.MeasureSize(parts[i], superOptions).Width;
                     xTextStart += stringSize;
@@ -505,7 +505,7 @@ namespace EinarEgilsson.Chords
                     KerningMode = KerningMode.Standard
                 };
                 var text = _baseFret + "fr";
-                _bitmap.Mutate(p =>
+                _image.Mutate(p =>
                     p.DrawText(textOption, text, _foregroundBrush));
             }
         }
@@ -569,7 +569,7 @@ namespace EinarEgilsson.Chords
                         VerticalAlignment = VerticalAlignment.Top,
                         HorizontalAlignment = HorizontalAlignment.Center
                     };
-                    _bitmap.Mutate(ctx => ctx
+                    _image.Mutate(ctx => ctx
                         .DrawText(textOptions, finger.ToString(), _foregroundBrush)
                         );
                 }
@@ -635,7 +635,7 @@ namespace EinarEgilsson.Chords
                 var arc3 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y - 1.5f * arcWidth / 2), new SizeF(barWidth / 2, (totalFretWidth + 1.5f * arcWidth - pen2.StrokeWidth) / 2), 0, -20, -150);
                 var path3 = new SixLabors.ImageSharp.Drawing.Path(arc3);
 
-                _bitmap.Mutate(ctx => ctx
+                _image.Mutate(ctx => ctx
                     .Draw(pen, path1)
                     .Draw(pen2, path2)
                     .Draw(pen2, path3));

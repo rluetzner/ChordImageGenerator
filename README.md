@@ -2,7 +2,8 @@
 
 > Attention!
 >
-> This is forked from [https://github.com/einaregilsson/ChordImageGenerator](https://github.com/einaregilsson/ChordImageGenerator) to keep the project maintained.
+> This is forked from [https://github.com/einaregilsson/ChordImageGenerator](https://github.com/einaregilsson/ChordImageGenerator) to keep the project maintained.  
+> The original maintainer passed away sadly, but this fork is still actively maintained.
 
 Chord Image Generator is a small .NET library to generate images of guitar chords. It can display chord boxes, starting frets, barred chords, fingerings and open and muted strings.
 

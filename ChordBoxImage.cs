@@ -585,22 +585,78 @@ namespace EinarEgilsson.Chords
             }
         }
 
-        private struct Bar { public int Str, Pos, Length; public char Finger; }
+        private struct Bar
+        {
+            public int StartingString;
+            public int Position;
+            public int Length;
+            public char Finger;
+        }
 
         private void DrawBars()
+        {
+            var bars = GetBars();
+
+            var totalFretWidth = _fretWidth + _lineWidth;
+            var arcWidth = (float) _dotWidth / 7;
+
+            foreach (var bar in bars.Values)
+            {
+                var yTempOffset = 0.0f;
+
+                if (bar.Position == 1)
+                {
+                    // the bar must go a little higher in order to be shown correctly
+                    yTempOffset = -0.3f * totalFretWidth;
+                }
+
+                var xstart = _xstart + bar.StartingString * totalFretWidth - (_dotWidth / 2);
+                var y = _ystart + (bar.Position - _baseFret) * totalFretWidth - (0.1f * totalFretWidth) + yTempOffset;
+                var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, arcWidth);
+                var pen2 = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, 1.3f * arcWidth);
+
+                var barWidth = bar.Length * totalFretWidth + _dotWidth;
+                var arc1 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y), new SizeF(barWidth / 2, (totalFretWidth - pen.StrokeWidth) / 2), 0, -1, -178);
+                var path1 = new SixLabors.ImageSharp.Drawing.Path(arc1);
+                var arc2 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y - arcWidth / 2), new SizeF(barWidth / 2, (totalFretWidth + 0.5f * arcWidth - pen2.StrokeWidth) / 2), 0, -4, -172);
+                var path2 = new SixLabors.ImageSharp.Drawing.Path(arc2);
+                var arc3 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y - 1.5f * arcWidth / 2), new SizeF(barWidth / 2, (totalFretWidth + 1.5f * arcWidth - pen2.StrokeWidth) / 2), 0, -20, -150);
+                var path3 = new SixLabors.ImageSharp.Drawing.Path(arc3);
+
+                _image.Mutate(ctx => ctx
+                    .Draw(pen, path1)
+                    .Draw(pen2, path2)
+                    .Draw(pen2, path3));
+            }
+        }
+
+        private Dictionary<char, Bar> GetBars()
         {
             var bars = new Dictionary<char, Bar>();
             var firstBarre = true;
 
             for (var i = 0; i < 5; i++)
             {
-                if (_chordPositions[i] != MUTED && _chordPositions[i] != OPEN && _fingers[i] != NO_FINGER && !bars.ContainsKey(_fingers[i]))
+                // A long winded way of saying:
+                // - we are playing a note,
+                // - there **is** a finger pressing the string and
+                // - the finger does not yet appear in the dictionary.
+                if (isANote(_chordPositions[i]) &&
+                    usesFinger(_fingers[i]) &&
+                    !bars.ContainsKey(_fingers[i]))
                 {
-                    var bar = new Bar { Str = i, Pos = _chordPositions[i], Length = 0, Finger = _fingers[i] };
+                    var bar = new Bar { StartingString = i, Position = _chordPositions[i], Length = 0, Finger = _fingers[i] };
 
+                    // drawFullBarre is a special option.
+                    // It will always draw a barre for the very first finger it
+                    // encounters.
+                    // It looks crappy in most cases, but is useful in case one
+                    // wants to indicate that even though other strings are
+                    // muted, they are muted by a barre (i.e. by this exact
+                    // finger).
                     if (_drawFullBarre && firstBarre)
                     {
-                        bar.Length = 5 - bar.Str;
+                        bar.Length = 5 - bar.StartingString;
                         firstBarre = false;
                     }
                     else
@@ -620,37 +676,14 @@ namespace EinarEgilsson.Chords
                 }
             }
 
-            var totalFretWidth = _fretWidth + _lineWidth;
-            var arcWidth = (float) _dotWidth / 7;
+            return bars;
 
-            foreach (var bar in bars.Values)
-            {
-                var yTempOffset = 0.0f;
+            bool isANote(int chordPosition) =>
+                chordPosition != MUTED &&
+                chordPosition != OPEN;
 
-                if (bar.Pos == 1)
-                {
-                    // the bar must go a little higher in order to be shown correctly
-                    yTempOffset = -0.3f * totalFretWidth;
-                }
-
-                var xstart = _xstart + bar.Str * totalFretWidth - (_dotWidth / 2);
-                var y = _ystart + (bar.Pos - _baseFret) * totalFretWidth - (0.1f * totalFretWidth) + yTempOffset;
-                var pen = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, arcWidth);
-                var pen2 = new SixLabors.ImageSharp.Drawing.Processing.SolidPen(_foregroundBrush, 1.3f * arcWidth);
-
-                var barWidth = bar.Length * totalFretWidth + _dotWidth;
-                var arc1 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y), new SizeF(barWidth / 2, (totalFretWidth - pen.StrokeWidth) / 2), 0, -1, -178);
-                var path1 = new SixLabors.ImageSharp.Drawing.Path(arc1);
-                var arc2 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y - arcWidth / 2), new SizeF(barWidth / 2, (totalFretWidth + 0.5f * arcWidth - pen2.StrokeWidth) / 2), 0, -4, -172);
-                var path2 = new SixLabors.ImageSharp.Drawing.Path(arc2);
-                var arc3 = new ArcLineSegment(new PointF(xstart + barWidth / 2, y - 1.5f * arcWidth / 2), new SizeF(barWidth / 2, (totalFretWidth + 1.5f * arcWidth - pen2.StrokeWidth) / 2), 0, -20, -150);
-                var path3 = new SixLabors.ImageSharp.Drawing.Path(arc3);
-
-                _image.Mutate(ctx => ctx
-                    .Draw(pen, path1)
-                    .Draw(pen2, path2)
-                    .Draw(pen2, path3));
-            }
+            bool usesFinger(char finger) =>
+                finger != NO_FINGER;
         }
 
         #endregion

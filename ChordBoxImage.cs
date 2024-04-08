@@ -105,6 +105,8 @@ namespace EinarEgilsson.Chords
 
         private int _baseFret;
 
+        private FontFamily _fontFamily;
+
         #endregion
 
         #region Constructor
@@ -291,8 +293,9 @@ namespace EinarEgilsson.Chords
             _boxHeight = FRET_COUNT * (_fretWidth + _lineWidth) + _lineWidth;
 
             // Find out font sizes
-            var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
-            family.TryGetMetrics(SixLabors.Fonts.FontStyle.Regular, out var metrics);
+            _fontFamily = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
+            _fontFamily.TryGetMetrics(SixLabors.Fonts.FontStyle.Regular, out var metrics);
+
             // Basically a magic scaling factor. Don't touch this!
             var perc = 0.79739934f;
             _fretFontSize = _fretWidth / perc;
@@ -351,6 +354,7 @@ namespace EinarEgilsson.Chords
                 DrawChordBox();
                 DrawChordPositions();
                 DrawChordName();
+                DrawBaseFretIfNeeded();
                 DrawFingers();
                 DrawBars();
             }
@@ -437,9 +441,8 @@ namespace EinarEgilsson.Chords
 
         private void DrawChordName()
         {
-            var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
-            var nameFont = family.CreateFont(_nameFontSize);
-            var superFont = family.CreateFont(_superScriptFontSize);
+            var nameFont = _fontFamily.CreateFont(_nameFontSize);
+            var superFont = _fontFamily.CreateFont(_superScriptFontSize);
             var parts = _chordName.Split('_');
             var xTextStart = _xstart;
 
@@ -475,28 +478,35 @@ namespace EinarEgilsson.Chords
             {
                 if (i % 2 == 0)
                 {
-                    _image.Mutate(p =>
-                        p.DrawText(parts[i], nameFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, 0.2f * _superScriptFontSize + yOffset)));
-                    var stringSize = TextMeasurer.MeasureSize(parts[i], nameOptions).Width;
-                    xTextStart += stringSize;
+                    // The use of _superScriptFontSize is a bit confusing.
+                    // It basically shifts the text, so normal and superscript are offset compared to each other.
+                    xTextStart += drawTextAndReturnSize(parts[i], nameFont, nameOptions, 0.2f * _superScriptFontSize + yOffset);
                 }
                 else
                 {
-                    _image.Mutate(p =>
-                        p.DrawText(parts[i], superFont, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, yOffset)));
-                    var stringSize = TextMeasurer.MeasureSize(parts[i], superOptions).Width;
-                    xTextStart += stringSize;
+                    xTextStart += drawTextAndReturnSize(parts[i], superFont, superOptions, yOffset);
                 }
 
                 if (i < maxParts - 1)
                 {
+                    // Add a bit of padding, otherwise the text ends up overlapping.
                     xTextStart += space;
                 }
             }
 
+            float drawTextAndReturnSize(string text, Font font, TextOptions options, float yModifiedOffset)
+            {
+                _image.Mutate(p =>
+                    p.DrawText(text, font, _foregroundBrush, new SixLabors.ImageSharp.PointF(xTextStart, yModifiedOffset)));
+                return TextMeasurer.MeasureSize(text, options).Width;
+            }
+        }
+
+        private void DrawBaseFretIfNeeded()
+        {
             if (_baseFret > 1)
             {
-                var fretFont = family.CreateFont(_fretFontSize);
+                var fretFont = _fontFamily.CreateFont(_fretFontSize);
                 var xpos = _xstart + _boxWidth + _lineWidth / 2 + 0.3f * _fretWidth;
                 var ypos = _ystart + _lineWidth - (fretFont.Size - _fretWidth) / 2f;
                 var textOption = new RichTextOptions(fretFont)
@@ -515,9 +525,8 @@ namespace EinarEgilsson.Chords
 
         private float getChordNameSizeInPixels()
         {
-            var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
-            var nameFont = family.CreateFont(_nameFontSize);
-            var superFont = family.CreateFont(_superScriptFontSize);
+            var nameFont = _fontFamily.CreateFont(_nameFontSize);
+            var superFont = _fontFamily.CreateFont(_superScriptFontSize);
             var parts = _chordName.Split('_');
 
             // Set max parts to 4 for protection
@@ -530,27 +539,23 @@ namespace EinarEgilsson.Chords
 
             // count total width of the chord in pixels
             var chordNameSize = 0f;
+
             for (var i = 0; i < maxParts; i++)
             {
-                if (i % 2 == 0)
-                {
-                    // odd parts are normal text
-                    var stringSize2 = TextMeasurer.MeasureSize(parts[i], nameOptions);
-                    chordNameSize += stringSize2.Width;
-                }
-                else
-                {
-                    // even parts are superscipts
-                    var stringSize2 = TextMeasurer.MeasureSize(parts[i], superOptions);
-                    chordNameSize += stringSize2.Width;
-                }
+                chordNameSize += measureTextSize(i);
 
                 if (i < maxParts - 1)
                 {
+                    // Add a bit of padding, otherwise the text ends up overlapping.
                     chordNameSize += space;
                 }
             }
+
             return chordNameSize;
+
+            float measureTextSize(int partsPosition) =>
+                // Even parts are normal text, odd parts are superscript.
+                TextMeasurer.MeasureSize(parts[partsPosition], partsPosition % 2 == 0 ? nameOptions : superOptions).Width;
         }
 
         private void DrawFingers()
@@ -558,8 +563,7 @@ namespace EinarEgilsson.Chords
             var xpos = _xstart + (0.5f * _lineWidth);
             var ypos = _ystart + _boxHeight + _lineWidth;
 
-            var family = SixLabors.Fonts.SystemFonts.Get(FONT_NAME);
-            var fingerFont = family.CreateFont(_fingerFontSize);
+            var fingerFont = _fontFamily.CreateFont(_fingerFontSize);
 
             foreach (var finger in _fingers)
             {

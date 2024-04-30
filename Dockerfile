@@ -6,7 +6,7 @@ COPY . /build
 RUN dotnet publish -c Release --no-restore -o /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
-RUN apt update && apt install -y libgdiplus libc6-dev
+RUN apt-get update && apt-get install -y libgdiplus libc6-dev
 WORKDIR /app
 COPY --from=builder /app/ ./
 EXPOSE 5000

@@ -72,7 +72,7 @@ namespace EinarEgilsson.Chords
         #region Fields
         private Image<Rgba32> _image;
 
-        private int _size;
+        private float _size;
         private int[] _chordPositions = new int[6];
         private char[] _fingers = new char[] { NO_FINGER, NO_FINGER, NO_FINGER,
                                              NO_FINGER, NO_FINGER, NO_FINGER};
@@ -274,12 +274,18 @@ namespace EinarEgilsson.Chords
             if (double.TryParse(size, out var dsize))
             {
                 dsize = Math.Round(dsize, 0);
-                _size = Convert.ToInt32(Math.Min(Math.Max(1, dsize), 10));
+                _size = (float) Math.Min(Math.Max(1, dsize), 20);
             }
             else
             {
                 _size = 1;
             }
+
+            // No magic needed.
+            if (_size == 1) return;
+
+            // We keep the original size of '1' and continue in half steps.
+            _size = 1 + (_size - 1) / 2;
         }
 
         private void InitializeSizes()

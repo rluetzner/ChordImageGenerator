@@ -73,9 +73,16 @@ namespace EinarEgilsson.Chords
         private Image<Rgba32> _image;
 
         private float _size;
-        private int[] _chordPositions = new int[6];
-        private char[] _fingers = new char[] { NO_FINGER, NO_FINGER, NO_FINGER,
-                                             NO_FINGER, NO_FINGER, NO_FINGER};
+        private int[][] _chordPositions = new int[6][];
+        private char[][] _fingers = new char[6][]
+        {
+            new [] {NO_FINGER},
+            new [] {NO_FINGER},
+            new [] {NO_FINGER},
+            new [] {NO_FINGER},
+            new [] {NO_FINGER},
+            new [] {NO_FINGER},
+        };
         private readonly bool _drawFullBarre;
         private string _chordName;
         private bool _parseError;
@@ -185,7 +192,7 @@ namespace EinarEgilsson.Chords
         {
             // If the chord involves frets higher than 10, the positions must be
             // separated by a dash, e.g. 10-12-12-0-0-0.
-            if (chord == null || !Regex.IsMatch(chord, @"[\dxX]{6}|((1|2)?[\dxX]-){5}(1|2)?[\dxX]"))
+            if (chord == null || !Regex.IsMatch(chord, @"[\dxX]{6}|((1|2)?[\dxX/]-)+(1|2)?[\dxX/]+"))
             {
                 _parseError = true;
                 return;
@@ -194,14 +201,20 @@ namespace EinarEgilsson.Chords
             var positions = GetFretPositions(chord);
             for (var i = 0; i < 6; i++)
             {
-                if (positions[i].ToUpper() == "X")
+                var split = positions[i].Split('/', StringSplitOptions.RemoveEmptyEntries);
+                var currentPositions = new List<int>();
+                foreach (var c in split)
                 {
-                    _chordPositions[i] = MUTED;
+                    if (c.ToUpper() == "X")
+                    {
+                        currentPositions.Add(MUTED);
+                    }
+                    else
+                    {
+                        currentPositions.Add(int.Parse(c));
+                    }
                 }
-                else
-                {
-                    _chordPositions[i] = int.Parse(positions[i]);
-                }
+                _chordPositions[i] = currentPositions.ToArray();
             }
 
             SetBaseFret();
@@ -216,6 +229,7 @@ namespace EinarEgilsson.Chords
                 // all open strings or even all muted strings (i.e. everything
                 // is 0 or -1).
                 var nonZeroChordPositions = _chordPositions
+                    .SelectMany(p => p)
                     .Where(p => p > 0);
                 var minFret = nonZeroChordPositions.Any()
                     ? nonZeroChordPositions.Min()
@@ -223,6 +237,7 @@ namespace EinarEgilsson.Chords
 
                 // The highest fret is easy. :-)
                 var maxFret = _chordPositions
+                    .SelectMany(p => p)
                     .Max();
 
                 if (maxFret <= 5)
@@ -259,13 +274,31 @@ namespace EinarEgilsson.Chords
                 // Allowed to not specify fingers
                 return;
             }
+            else if (fingers.Contains("+"))
+            {
+                var split = fingers.Split('+');
+                if (split.Length != 6)
+                {
+                    _parseError = true;
+                    return;
+                }
+
+                _fingers = split
+                    .Select(s => s.Replace("/", "").ToCharArray())
+                    .ToArray();
+            }
             else if (!Regex.IsMatch(fingers, @"[tT\-1234]{6}"))
             {
                 _parseError = true;
+                return;
             }
             else
             {
-                _fingers = fingers.ToUpper().ToCharArray();
+                _fingers = fingers
+                    .ToUpper()
+                    .ToCharArray()
+                    .Select(c => new char[]{c})
+                    .ToArray();
             }
         }
 
@@ -420,22 +453,25 @@ namespace EinarEgilsson.Chords
 
             for (var i = 0; i < _chordPositions.Length; i++)
             {
-                var absolutePos = _chordPositions[i];
-                var relativePos = absolutePos - _baseFret + 1;
+                for (var j = 0; j < _chordPositions[i].Length; j++)
+                {
+                    var absolutePos = _chordPositions[i][j];
+                    var relativePos = absolutePos - _baseFret + 1;
 
-                var xpos = _xstart - (0.5f * _fretWidth) + (0.5f * _lineWidth) + (i * totalFretWidth);
+                    var xpos = _xstart - (0.5f * _fretWidth) + (0.5f * _lineWidth) + (i * totalFretWidth);
 
-                if (relativePos > 0)
-                {
-                    drawFilledDotOnString(relativePos, xpos);
-                }
-                else if (absolutePos == OPEN)
-                {
-                    drawCircleOnTop(xpos);
-                }
-                else if (absolutePos == MUTED)
-                {
-                    drawXOnTop(xpos);
+                    if (relativePos > 0)
+                    {
+                        drawFilledDotOnString(relativePos, xpos);
+                    }
+                    else if (absolutePos == OPEN)
+                    {
+                        drawCircleOnTop(xpos);
+                    }
+                    else if (absolutePos == MUTED)
+                    {
+                        drawXOnTop(xpos);
+                    }
                 }
             }
 
@@ -607,8 +643,9 @@ namespace EinarEgilsson.Chords
 
             var fingerFont = _fontFamily.CreateFont(_fingerFontSize);
 
-            foreach (var finger in _fingers)
+            foreach (var fingers in _fingers)
             {
+                var finger = fingers.Max();
                 if (finger != NO_FINGER)
                 {
                     var textOptions = new RichTextOptions(fingerFont)
@@ -676,43 +713,49 @@ namespace EinarEgilsson.Chords
             var bars = new Dictionary<char, Bar>();
             var firstBarre = true;
 
-            for (var i = 0; i < 5; i++)
+            for (var i = 0; i < _fingers.Length; i++)
             {
-                // A long winded way of saying:
-                // - we are playing a note,
-                // - there **is** a finger pressing the string and
-                // - the finger does not yet appear in the dictionary.
-                if (isANote(_chordPositions[i]) &&
-                    usesFinger(_fingers[i]) &&
-                    !bars.ContainsKey(_fingers[i]))
+                for (var j = 0; j < _fingers[i].Length; j++)
                 {
-                    var bar = new Bar { StartingString = i, Position = _chordPositions[i], Length = 0, Finger = _fingers[i] };
+                    // A long winded way of saying:
+                    // - we are playing a note,
+                    // - there **is** a finger pressing the string and
+                    // - the finger does not yet appear in the dictionary.
+                    if (isANote(_chordPositions[i][j]) &&
+                        usesFinger(_fingers[i][j]) &&
+                        !bars.ContainsKey(_fingers[i][j]))
+                    {
+                        var bar = new Bar { StartingString = i, Position = _chordPositions[i][j], Length = 0, Finger = _fingers[i][j] };
 
-                    // drawFullBarre is a special option.
-                    // It will always draw a barre for the very first finger it
-                    // encounters.
-                    // It looks crappy in most cases, but is useful in case one
-                    // wants to indicate that even though other strings are
-                    // muted, they are muted by a barre (i.e. by this exact
-                    // finger).
-                    if (_drawFullBarre && firstBarre)
-                    {
-                        bar.Length = 5 - bar.StartingString;
-                        firstBarre = false;
-                    }
-                    else
-                    {
-                        for (var j = i + 1; j < 6; j++)
+                        // drawFullBarre is a special option.
+                        // It will always draw a barre for the very first finger it
+                        // encounters.
+                        // It looks crappy in most cases, but is useful in case one
+                        // wants to indicate that even though other strings are
+                        // muted, they are muted by a barre (i.e. by this exact
+                        // finger).
+                        if (_drawFullBarre && firstBarre)
                         {
-                            if (_fingers[j] == bar.Finger && _chordPositions[j] == _chordPositions[i])
+                            bar.Length = 5 - bar.StartingString;
+                            firstBarre = false;
+                        }
+                        else
+                        {
+                            for (var x = i + 1; x < _fingers.Length; x++)
                             {
-                                bar.Length = j - i;
+                                for (var y = 0; y < _fingers[x].Length; y++)
+                                {
+                                    if (_fingers[x][y] == bar.Finger && _chordPositions[x][y] == _chordPositions[i][j])
+                                    {
+                                        bar.Length = x - i;
+                                    }
+                                }
                             }
                         }
-                    }
-                    if (bar.Length > 0)
-                    {
-                        bars.Add(bar.Finger, bar);
+                        if (bar.Length > 0)
+                        {
+                            bars.Add(bar.Finger, bar);
+                        }
                     }
                 }
             }

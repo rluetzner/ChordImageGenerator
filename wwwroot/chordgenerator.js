@@ -50,6 +50,8 @@ function parseChord(chord) {
 
     var doubleDigit = true;
     var tempParts;
+    var multFingers = true;
+    var tempFingerParts;
 
     if (p) {
         if (p.indexOf('-') === -1) {
@@ -63,9 +65,21 @@ function parseChord(chord) {
         }
     }
 
+    if (f) {
+        if (f.indexOf('+') === -1) {
+            multFingers = false;
+        } else {
+            var tempFingerParts = f.split("+");
+        }
+    }
+
     for (var i = 0; i < 6; i++) {
         if (f) {
-            fingers[i].value = f.charAt(i);
+            if (!multFingers) {
+                fingers[i].value = f.charAt(i);
+            } else {
+                fingers[i].value = tempFingerParts[i];
+            }
         }
         if (p) {
             if (!doubleDigit) {
@@ -112,7 +126,10 @@ function showChord() {
     if (chord.length == 11) {
         chord = chord.replace(/-/g, '');
     }
-    var fingers = fE.value + fA.value + fD.value + fG.value + fB.value + fe.value;
+    var fingers = fE.value + '+' + fA.value + '+' + fD.value + '+' + fG.value + '+' + fB.value + '+' + fe.value;
+    if (fingers.length == 11) {
+        fingers = fingers.replace(/\+/g, '');
+    }
     var draw_full_barre = $('full_barre').checked;
     var chordUrl = encodedName + '.png?p=' + chord + '&f=' + fingers + '&s=' + size + '&b=' + draw_full_barre;
     var url = document.location.protocol + '//' + document.location.host + document.location.pathname.replace('index.html', '');

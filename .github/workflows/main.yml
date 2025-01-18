@@ -18,10 +18,10 @@ on:
       - 'dev'
       - 'v*.*.*'
 
-permissions: 
+permissions:
   contents: read
   packages: write
-  
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build:
@@ -30,7 +30,7 @@ jobs:
       # Get the repositery's code
       - name: Checkout
         uses: actions/checkout@v2
-      
+
       # https://github.com/docker/setup-qemu-action
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1

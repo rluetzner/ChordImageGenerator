@@ -5,13 +5,8 @@ namespace EinarEgilsson.Chords
 {
     public class Startup
     {
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
             app.UseMiddleware<ChordMiddleware>();
             app.UseDefaultFiles();
             app.UseStaticFiles();

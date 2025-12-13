@@ -47,5 +47,5 @@ The source is licensed under the MIT License. You are also free to link directly
 You can also run this web server as a Docker container.
 
 ```bash
-docker run -p 5000:80 rluetzner/chordimagegenerator:latest
+docker run -p 5000:5000 rluetzner/chordimagegenerator:latest
 ```
